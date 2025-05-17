@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Pessoas Cadastradas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .face-card img {
+            height: 180px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3>Pessoas Cadastradas</h3>
+            <div>
+                <a href="{{ url_for('cadastrar') }}" class="btn btn-outline-secondary btn-sm">Novo Cadastro</a>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm">Sair</a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="alert alert-info">{{ messages[0] }}</div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Formulário de busca e filtro -->
+        <form method="GET" class="row g-2 mb-4">
+            <div class="col-md-5">
+                <input type="text" name="busca" value="{{ busca }}" class="form-control" placeholder="Buscar por nome ou ID">
+            </div>
+            <div class="col-md-4">
+                <input type="date" name="data" value="{{ data_filtro }}" class="form-control">
+            </div>
+            <div class="col-md-3 d-grid">
+                <button type="submit" class="btn btn-outline-primary">Filtrar</button>
+            </div>
+        </form>
+
+        <!-- Lista de pessoas -->
+        <div class="row">
+            {% for pessoa in pessoas %}
+            <div class="col-md-3 mb-4">
+                <div class="card face-card shadow-sm">
+                    <img src="{{ pessoa.imagem_url }}" class="card-img-top" alt="{{ pessoa.nome }}">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ pessoa.nome }}</h5>
+                        <p class="card-text">ID: {{ pessoa.identificacao }}</p>
+                        <p class="card-text"><small class="text-muted">Data: {{ pessoa.data }}</small></p>
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('editar', identificacao=pessoa.identificacao) }}" class="btn btn-sm btn-primary">Editar</a>
+                            <form method="POST" action="{{ url_for('excluir', identificacao=pessoa.identificacao) }}" onsubmit="return confirm('Tem certeza que deseja excluir?')">
+                                <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-muted">Nenhuma pessoa encontrada com os filtros aplicados.</p>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>
