@@ -1,37 +1,29 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Editar Cadastro</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-    <div class="container mt-5">
-        <h3>Editar Cadastro</h3>
-        <a href="{{ url_for('lista') }}" class="btn btn-outline-secondary mb-3">Voltar</a>
-
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <div class="alert alert-info">{{ messages[0] }}</div>
-            {% endif %}
-        {% endwith %}
-
-        <form method="POST" enctype="multipart/form-data" class="shadow p-4 bg-white rounded">
-            <div class="mb-3">
-                <label class="form-label">Nome</label>
-                <input type="text" name="nome" value="{{ pessoa.nome }}" class="form-control" required>
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Identificação</label>
-                <input type="text" name="nova_identificacao" value="{{ pessoa.identificacao }}" class="form-control" required>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Nova Foto (opcional)</label>
-                <input type="file" name="imagem" class="form-control" accept="image/*">
-            </div>
-            <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-        </form>
+{% extends 'base.html' %}
+{% block title %}Editar Pessoa{% endblock %}
+{% block content %}
+<h2>Editar Usuário</h2>
+<form method="POST" enctype="multipart/form-data">
+    <div class="mb-3">
+        <label for="nome" class="form-label">Nome:</label>
+        <input type="text" class="form-control" id="nome" name="nome" value="{{ pessoa.nome }}" required>
     </div>
-</body>
-</html>
+    <div class="mb-3">
+        <label for="nova_identificacao" class="form-label">CPF:</label>
+        <input type="text" class="form-control" id="nova_identificacao" name="nova_identificacao" value="{{ pessoa.cpf }}" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Imagem Atual:</label><br>
+        {% if pessoa.endereco_imagem %}
+            <img src="{{ pessoa.endereco_imagem }}" class="img-thumbnail" width="150">
+        {% else %}
+            <p>Nenhuma imagem disponível.</p>
+        {% endif %}
+    </div>
+    <div class="mb-3">
+        <label for="imagem" class="form-label">Nova Imagem (opcional):</label>
+        <input type="file" class="form-control" id="imagem" name="imagem" accept="image/*">
+    </div>
+    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+    <a href="{{ url_for('lista') }}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

@@ -4,7 +4,7 @@ from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 import os
 import uuid
-import json
+import mysql.connector
 from datetime import datetime
 
 # Configuração
@@ -13,6 +13,15 @@ app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY')
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Banco de dados MySQL
+
+db = mysql.connector.connect(
+    host="127.0.0.1",
+    user="Root",
+    password="root",
+    database="tcc_reconhece"
+)
 
 # Login
 login_manager = LoginManager()
@@ -28,43 +37,55 @@ def load_user(user_id):
         return Admin()
     return None
 
-# Utilitários
-JSON_PATH = 'cadastros.json'
-
-def carregar_dados():
-    if os.path.exists(JSON_PATH):
-        with open(JSON_PATH, 'r') as f:
-            return json.load(f)
-    return []
-
-def salvar_dados(pessoa):
-    dados = carregar_dados()
-    if any(p['identificacao'] == pessoa['identificacao'] for p in dados):
+# Funções de banco de dados
+def salvar_usuario(cpf, nome, imagem_url):
+    cursor = db.cursor()
+    try:
+        cursor.execute(
+            "INSERT INTO usuarios (CPF, nome, endereco_imagem) VALUES (%s, %s, %s)",
+            (cpf, nome, imagem_url)
+        )
+        db.commit()
+        print(f"Usuário inserido: CPF={cpf}, Nome={nome}, Imagem={imagem_url}")
+        return True
+    except mysql.connector.errors.IntegrityError as e:
+        print("Erro ao inserir CPF:", e)
         return False
-    dados.append(pessoa)
-    with open(JSON_PATH, 'w') as f:
-        json.dump(dados, f, indent=4)
-    return True
+    finally:
+        cursor.close()
 
-def atualizar_dados(identificacao, novos_dados):
-    dados = carregar_dados()
-    for i, p in enumerate(dados):
-        if p['identificacao'] == identificacao:
-            dados[i].update(novos_dados)
-            with open(JSON_PATH, 'w') as f:
-                json.dump(dados, f, indent=4)
-            return True
-    return False
+def carregar_usuarios():
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM usuarios")
+    usuarios = cursor.fetchall()
+    cursor.close()
+    return usuarios
 
-def excluir_dado(identificacao):
-    dados = carregar_dados()
-    novos_dados = [p for p in dados if p['identificacao'] != identificacao]
-    with open(JSON_PATH, 'w') as f:
-        json.dump(novos_dados, f, indent=4)
-    return True
+
+def atualizar_usuario(cpf_antigo, cpf_novo, nome, imagem_url=None):
+    cursor = db.cursor()
+    if imagem_url:
+        sql = "UPDATE usuarios SET CPF = %s, nome = %s, endereco_imagem = %s WHERE CPF = %s"
+        vals = (cpf_novo, nome, imagem_url, cpf_antigo)
+    else:
+        sql = "UPDATE usuarios SET CPF = %s, nome = %s WHERE CPF = %s"
+        vals = (cpf_novo, nome, cpf_antigo)
+    cursor.execute(sql, vals)
+    db.commit()
+
+def excluir_usuario(cpf):
+    cursor = db.cursor()
+    cursor.execute("DELETE FROM usuarios WHERE CPF = %s", (cpf,))
+    db.commit()
 
 # Rotas
-@app.route('/', methods=['GET', 'POST'])
+from flask_login import current_user, logout_user
+
+@app.route('/')
+def index():
+    if current_user.is_authenticated:
+        logout_user()
+    return redirect(url_for('login'))
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -72,7 +93,7 @@ def login():
         senha = request.form['password']
         if usuario == os.getenv("ADMIN_USERNAME") and senha == os.getenv("ADMIN_PASSWORD"):
             login_user(Admin())
-            return redirect(url_for('cadastrar'))
+            return redirect(url_for('lista'))
         flash("Credenciais inválidas.")
     return render_template('login.html')
 
@@ -82,76 +103,86 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-
 @app.route('/cadastrar', methods=['GET', 'POST'])
 @login_required
 def cadastrar():
     if request.method == 'POST':
         nome = request.form['nome']
-        identificacao = request.form['identificacao']
+        cpf = request.form['identificacao']
         imagem = request.files['imagem']
-
-        # Verifica se identificação já está cadastrada
-        dados = carregar_dados()
-        if any(p['identificacao'] == identificacao for p in dados):
-            flash("Identificação já cadastrada.")
+        # Verifica se CPF já está cadastrado
+        usuarios = carregar_usuarios()
+        if any(u['cpf'] == cpf for u in usuarios):
+            flash("CPF já cadastrado.")
             return redirect(url_for('cadastrar'))
 
-        # Só salva imagem se a identificação for nova
         if imagem:
             nome_arquivo = secure_filename(imagem.filename)
             nome_unico = f"{uuid.uuid4()}_{nome_arquivo}"
             caminho_arquivo = os.path.join(app.config['UPLOAD_FOLDER'], nome_unico)
             imagem.save(caminho_arquivo)
             url_imagem = url_for('static', filename=f'uploads/{nome_unico}')
+            URL_ABSO = os.path.abspath(caminho_arquivo)
 
-            pessoa = {
-                "nome": nome,
-                "identificacao": identificacao,
-                "imagem_url": url_imagem,
-                "data": datetime.now().strftime("%Y-%m-%d")
-            }
+            if salvar_usuario(cpf, nome, URL_ABSO):
+                flash("Pessoa cadastrada com sucesso!")
+            else:
+                flash("Erro ao cadastrar pessoa.")
 
-            salvar_dados(pessoa)
-            flash("Pessoa cadastrada com sucesso!")
             return redirect(url_for('cadastrar'))
 
     return render_template('cadastrar.html')
 
-
-@app.route('/lista')
+@app.route('/lista', methods=['GET'])
 @login_required
 def lista():
-    pessoas = carregar_dados()
-    busca = request.args.get('busca', '').strip().lower()
-    data_filtro = request.args.get('data', '').strip()
+    filtro = request.args.get('filtro', '')
+    data = request.args.get('data', '')
 
-    if busca:
-        pessoas = [p for p in pessoas if busca in p['nome'].lower() or busca in p['identificacao'].lower()]
+    cursor = db.cursor(dictionary=True)
 
-    if data_filtro:
-        pessoas = [p for p in pessoas if p.get('data') == data_filtro]
+    query = "SELECT * FROM usuarios WHERE 1=1"
+    valores = []
 
-    return render_template('lista.html', pessoas=pessoas, busca=busca, data_filtro=data_filtro)
+    if filtro:
+        query += " AND (nome LIKE %s OR CPF LIKE %s)"
+        filtro_valor = f"%{filtro}%"
+        valores.extend([filtro_valor, filtro_valor])
 
-@app.route('/editar/<identificacao>', methods=['GET', 'POST'])
+    if data:
+        query += " AND DATE(criado_em) = %s"
+        valores.append(data)
+
+    cursor.execute(query, valores)
+    pessoas = cursor.fetchall()
+    pessoas = imagem_corrigida(pessoas)
+    cursor.close()
+
+    return render_template('lista.html', pessoas=pessoas, filtro=filtro, data=data)
+
+def imagem_corrigida(pessoas):
+    for pessoa in pessoas:
+        pessoa['endereco_imagem'] = "/static/" + str(pessoa['endereco_imagem'].replace("\\", "/").split("/static/")[1])
+    return pessoas
+
+@app.route('/editar/<cpf>', methods=['GET', 'POST'])
 @login_required
-def editar(identificacao):
-    dados = carregar_dados()
-    pessoa = next((p for p in dados if p['identificacao'] == identificacao), None)
+def editar(cpf):
+    usuarios = carregar_usuarios()
+    usuarios = imagem_corrigida(usuarios)
+    pessoa = next((u for u in usuarios if u['cpf'] == cpf), None)
     if not pessoa:
         flash("Pessoa não encontrada.")
         return redirect(url_for('lista'))
 
     if request.method == 'POST':
         nome = request.form['nome']
-        nova_identificacao = request.form['nova_identificacao']
+        novo_cpf = request.form['nova_identificacao']
         nova_imagem = request.files.get('imagem')
-        nova_url_imagem = pessoa['imagem_url']
+        nova_url_imagem = pessoa['endereco_imagem']
 
-        # Se nova imagem foi enviada, remove a anterior e salva a nova
         if nova_imagem and nova_imagem.filename:
-            imagem_antiga = pessoa.get('imagem_url', '').replace('/static/', '')
+            imagem_antiga = pessoa['endereco_imagem'].replace('/static/', '')
             caminho_antigo = os.path.join('static', imagem_antiga)
             if os.path.exists(caminho_antigo):
                 os.remove(caminho_antigo)
@@ -161,47 +192,27 @@ def editar(identificacao):
             caminho_arquivo = os.path.join(app.config['UPLOAD_FOLDER'], nome_unico)
             nova_imagem.save(caminho_arquivo)
             nova_url_imagem = url_for('static', filename=f'uploads/{nome_unico}')
+            URL_ABS = os.path.abspath(nova_url_imagem)
 
-        # Atualiza ou move o registro
-        dados = [p for p in dados if p['identificacao'] != identificacao]
-        pessoa_atualizada = {
-            "nome": nome,
-            "identificacao": nova_identificacao,
-            "imagem_url": nova_url_imagem,
-            "data": pessoa.get("data", datetime.now().strftime("%Y-%m-%d"))
-        }
-
-        # Garante que a nova identificação não já esteja em uso
-        if any(p['identificacao'] == nova_identificacao for p in dados):
-            flash("Essa nova identificação já está em uso.")
-            return redirect(url_for('editar', identificacao=identificacao))
-
-        dados.append(pessoa_atualizada)
-        with open(JSON_PATH, 'w') as f:
-            json.dump(dados, f, indent=4)
-
+        atualizar_usuario(cpf, novo_cpf, nome, URL_ABS)
         flash("Cadastro atualizado com sucesso!")
         return redirect(url_for('lista'))
 
     return render_template('editar.html', pessoa=pessoa)
 
-
-
-@app.route('/excluir/<identificacao>', methods=['POST'])
+@app.route('/excluir/<cpf>', methods=['POST'])
 @login_required
-def excluir(identificacao):
-    dados = carregar_dados()
-    pessoa = next((p for p in dados if p['identificacao'] == identificacao), None)
+def excluir(cpf):
+    usuarios = carregar_usuarios()
+    pessoa = next((u for u in usuarios if u['cpf'] == cpf), None)
     if pessoa:
-        # Remove imagem do disco
-        imagem_url = pessoa.get('imagem_url', '').replace('/static/', '')
+        imagem_url = pessoa.get('endereco_imagem', '').replace('/static/', '')
         caminho = os.path.join('static', imagem_url)
         if os.path.exists(caminho):
             os.remove(caminho)
-    excluir_dado(identificacao)
+    excluir_usuario(cpf)
     flash("Registro excluído com sucesso!")
     return redirect(url_for('lista'))
-
 
 if __name__ == '__main__':
     app.run(debug=True)
