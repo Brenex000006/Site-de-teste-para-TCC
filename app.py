@@ -192,9 +192,11 @@ def editar(cpf):
             caminho_arquivo = os.path.join(app.config['UPLOAD_FOLDER'], nome_unico)
             nova_imagem.save(caminho_arquivo)
             nova_url_imagem = url_for('static', filename=f'uploads/{nome_unico}')
-            URL_ABS = os.path.abspath(nova_url_imagem)
+            Url_Abs = os.path.abspath(nova_url_imagem)
+        else:
+            Url_Abs = pessoa['endereco_imagem']
 
-        atualizar_usuario(cpf, novo_cpf, nome, URL_ABS)
+        atualizar_usuario(cpf, novo_cpf, nome, Url_Abs)
         flash("Cadastro atualizado com sucesso!")
         return redirect(url_for('lista'))
 
