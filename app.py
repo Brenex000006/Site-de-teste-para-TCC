@@ -192,7 +192,7 @@ def editar(cpf):
             caminho_arquivo = os.path.join(app.config['UPLOAD_FOLDER'], nome_unico)
             nova_imagem.save(caminho_arquivo)
             nova_url_imagem = url_for('static', filename=f'uploads/{nome_unico}')
-            Url_Abs = os.path.abspath(nova_url_imagem)
+            Url_Abs = os.path.abspath(caminho_arquivo)
         else:
             Url_Abs = pessoa['endereco_imagem']
 
