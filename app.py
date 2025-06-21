@@ -194,7 +194,9 @@ def editar(cpf):
             nova_url_imagem = url_for('static', filename=f'uploads/{nome_unico}')
             Url_Abs = os.path.abspath(caminho_arquivo)
         else:
-            Url_Abs = pessoa['endereco_imagem']
+            relative_path = pessoa['endereco_imagem'].lstrip('/')  # Remove leading slash
+            base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current script
+            Url_Abs = os.path.abspath(os.path.join(base_dir, relative_path))
 
         atualizar_usuario(cpf, novo_cpf, nome, Url_Abs)
         flash("Cadastro atualizado com sucesso!")
@@ -217,4 +219,5 @@ def excluir(cpf):
     return redirect(url_for('lista'))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    #app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
