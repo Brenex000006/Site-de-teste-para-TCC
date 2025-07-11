@@ -122,8 +122,13 @@ def login():
         usuario = request.form['username']
         senha = request.form['password']
         secret = os.getenv('ADMIN_2FA_SECRET')
+        bypass = False  # Modo de bypass para testes, remova em produção
+
 
         if usuario == os.getenv("ADMIN_USERNAME") and senha == os.getenv("ADMIN_PASSWORD"):
+            if bypass :
+                login_user(Admin())
+                return redirect(url_for('lista'))
             if not secret:
                 # Sem 2FA configurado: login direto e redireciona ao setup
                 login_user(Admin())
