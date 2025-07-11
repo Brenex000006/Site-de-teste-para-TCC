@@ -1,11 +1,16 @@
+import os
+import threading
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
+from flask_login import current_user, logout_user
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
-import os
 import uuid
 import mysql.connector
 from datetime import datetime
+
+from registrar_mudancas import carregar_buffer,debounce_worker, registrar_alteracao_buffer
+from utils import pegar_config
 
 # Configuração
 load_dotenv()
@@ -18,7 +23,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 db = mysql.connector.connect(
     host="127.0.0.1",
-    user="Root",
+    user="root",
     password="root",
     database="tcc_reconhece"
 )
@@ -79,13 +84,12 @@ def excluir_usuario(cpf):
     db.commit()
 
 # Rotas
-from flask_login import current_user, logout_user
-
 @app.route('/')
 def index():
     if current_user.is_authenticated:
         logout_user()
     return redirect(url_for('login'))
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -126,6 +130,8 @@ def cadastrar():
 
             if salvar_usuario(cpf, nome, URL_ABSO):
                 flash("Pessoa cadastrada com sucesso!")
+                registrar_alteracao_buffer("usuarios", "adicionar", nome)
+                registrar_alteracao_buffer("imagens", "adicionar", url_imagem)
             else:
                 flash("Erro ao cadastrar pessoa.")
 
@@ -179,20 +185,21 @@ def editar(cpf):
         nome = request.form['nome']
         novo_cpf = request.form['nova_identificacao']
         nova_imagem = request.files.get('imagem')
-        nova_url_imagem = pessoa['endereco_imagem']
 
         if nova_imagem and nova_imagem.filename:
             imagem_antiga = pessoa['endereco_imagem'].replace('/static/', '')
             caminho_antigo = os.path.join('static', imagem_antiga)
             if os.path.exists(caminho_antigo):
+
                 os.remove(caminho_antigo)
 
             nome_arquivo = secure_filename(nova_imagem.filename)
             nome_unico = f"{uuid.uuid4()}_{nome_arquivo}"
             caminho_arquivo = os.path.join(app.config['UPLOAD_FOLDER'], nome_unico)
             nova_imagem.save(caminho_arquivo)
-            nova_url_imagem = url_for('static', filename=f'uploads/{nome_unico}')
             Url_Abs = os.path.abspath(caminho_arquivo)
+            registrar_alteracao_buffer("usuarios", "deletar", nome)
+            registrar_alteracao_buffer("imagens", "deletar", nome_unico)
         else:
             relative_path = pessoa['endereco_imagem'].lstrip('/')  # Remove leading slash
             base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current script
@@ -213,6 +220,8 @@ def excluir(cpf):
         imagem_url = pessoa.get('endereco_imagem', '').replace('/static/', '')
         caminho = os.path.join('static', imagem_url)
         if os.path.exists(caminho):
+            registrar_alteracao_buffer("usuarios", "deletar", cpf) #dar um jeito de colocar nome aqui
+            registrar_alteracao_buffer("imagens", "deletar", imagem_url)
             os.remove(caminho)
     excluir_usuario(cpf)
     flash("Registro excluído com sucesso!")
@@ -220,4 +229,11 @@ def excluir(cpf):
 
 if __name__ == '__main__':
     #app.run(debug=True)
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    lbd_url = pegar_config("LBD")
+    print(lbd_url)
+    if lbd_url:
+        carregar_buffer()
+        threading.Thread(target=debounce_worker, daemon=True).start()
+        app.run(host='0.0.0.0', port=5000, debug=True)
+    else:
+        print("[ERROR] Não foi possível pegar config da Lambda, o programa não será iniciado!")
