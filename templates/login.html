@@ -1,16 +1,29 @@
 {% extends 'base.html' %}
 {% block title %}Login{% endblock %}
 {% block content %}
-<h2>Login do Administrador</h2>
-<form method="POST">
-    <div class="mb-3">
-        <label for="username" class="form-label">Usuário:</label>
-        <input type="text" class="form-control" id="username" name="username" required>
-    </div>
-    <div class="mb-3">
-        <label for="password" class="form-label">Senha:</label>
-        <input type="password" class="form-control" id="password" name="password" required>
-    </div>
-    <button type="submit" class="btn btn-primary">Entrar</button>
-</form>
+<div class="container mt-5" style="max-width: 400px;">
+    <h2 class="text-center mb-4">Login do Administrador</h2>
+    <form method="POST" class="border p-4 rounded shadow">
+        <div class="mb-3">
+            <label for="username" class="form-label">Usuário</label>
+            <input type="text" class="form-control" id="username" name="username" required>
+        </div>
+        <div class="mb-3">
+            <label for="password" class="form-label">Senha</label>
+            <input type="password" class="form-control" id="password" name="password" required>
+        </div>
+
+        {% if secret %}
+        <!-- Campo do código 2FA só aparece se o segredo já estiver configurado -->
+        <div class="mb-3">
+            <label for="codigo_2fa" class="form-label">Código 2FA</label>
+            <input type="text" class="form-control" id="codigo_2fa" name="codigo_2fa" required>
+        </div>
+        {% endif %}
+
+        <div class="d-grid">
+            <button type="submit" class="btn btn-primary">Entrar</button>
+        </div>
+    </form>
+</div>
 {% endblock %}

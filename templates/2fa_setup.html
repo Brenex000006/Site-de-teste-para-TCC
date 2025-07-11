@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Configurar 2FA{% endblock %}
+{% block content %}
+<div class="container mt-5" style="max-width: 500px;">
+    <h2 class="text-center mb-4">Configurar Autenticação 2FA</h2>
+    <p>Escaneie o QR Code abaixo no Google Authenticator para gerar os códigos 2FA:</p>
+    <div class="text-center mb-3">
+        <img src="{{ url_for('two_factor_qr') }}" alt="QR Code para 2FA" class="img-thumbnail">
+    </div>
+    <form method="POST" class="border p-4 rounded shadow">
+        <div class="mb-3">
+            <label for="codigo_2fa" class="form-label">Digite o código gerado:</label>
+            <input type="text" class="form-control" id="codigo_2fa" name="codigo_2fa" required>
+        </div>
+        <div class="d-grid">
+            <button type="submit" class="btn btn-success">Ativar 2FA</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
