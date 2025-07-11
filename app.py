@@ -1,10 +1,13 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 import os
 import uuid
 import mysql.connector
+import pyotp
+import qrcode
+import io
 from datetime import datetime
 
 # Configuração
@@ -15,7 +18,6 @@ app.config['UPLOAD_FOLDER'] = 'static/uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Banco de dados MySQL
-
 db = mysql.connector.connect(
     host="127.0.0.1",
     user="Root",
@@ -37,7 +39,37 @@ def load_user(user_id):
         return Admin()
     return None
 
-# Funções de banco de dados
+# --- Funções auxiliares ---
+def update_env_variable(key, value, env_path='.env'):
+    """Atualiza ou adiciona uma variável no .env"""
+    lines = []
+    if os.path.exists(env_path):
+        with open(env_path, 'r') as f:
+            lines = f.readlines()
+
+    with open(env_path, 'w') as f:
+        found = False
+        for line in lines:
+            if line.startswith(f"{key}="):
+                f.write(f"{key}={value}\n")
+                found = True
+            else:
+                f.write(line)
+        if not found:
+            f.write(f"{key}={value}\n")
+
+    # Recarrega a variável no ambiente
+    load_dotenv(env_path, override=True)
+
+def get_or_create_admin_2fa_secret():
+    """Retorna a chave secreta do admin ou cria uma nova"""
+    secret = os.getenv('ADMIN_2FA_SECRET')
+    if not secret:
+        secret = pyotp.random_base32()
+        update_env_variable('ADMIN_2FA_SECRET', secret)
+    return secret
+
+# --- Funções de banco de dados ---
 def salvar_usuario(cpf, nome, imagem_url):
     cursor = db.cursor()
     try:
@@ -61,7 +93,6 @@ def carregar_usuarios():
     cursor.close()
     return usuarios
 
-
 def atualizar_usuario(cpf_antigo, cpf_novo, nome, imagem_url=None):
     cursor = db.cursor()
     if imagem_url:
@@ -78,24 +109,39 @@ def excluir_usuario(cpf):
     cursor.execute("DELETE FROM usuarios WHERE CPF = %s", (cpf,))
     db.commit()
 
-# Rotas
-from flask_login import current_user, logout_user
-
+# --- Rotas ---
 @app.route('/')
 def index():
     if current_user.is_authenticated:
         logout_user()
     return redirect(url_for('login'))
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         usuario = request.form['username']
         senha = request.form['password']
+        secret = os.getenv('ADMIN_2FA_SECRET')
+
         if usuario == os.getenv("ADMIN_USERNAME") and senha == os.getenv("ADMIN_PASSWORD"):
-            login_user(Admin())
-            return redirect(url_for('lista'))
-        flash("Credenciais inválidas.")
-    return render_template('login.html')
+            if not secret:
+                # Sem 2FA configurado: login direto e redireciona ao setup
+                login_user(Admin())
+                flash("Configure o 2FA antes de continuar.")
+                return redirect(url_for('two_factor_setup'))
+            else:
+                # 2FA configurado: valida o código
+                codigo_2fa = request.form.get('codigo_2fa')
+                totp = pyotp.TOTP(secret)
+                if totp.verify(codigo_2fa, valid_window=1):  # tolerância de 30s para frente e trás
+                    login_user(Admin())
+                    return redirect(url_for('lista'))
+                else:
+                    flash("Código 2FA inválido.")
+        else:
+            flash("Credenciais inválidas.")
+
+    return render_template('login.html', secret=os.getenv('ADMIN_2FA_SECRET'))
 
 @app.route('/logout')
 @login_required
@@ -110,7 +156,6 @@ def cadastrar():
         nome = request.form['nome']
         cpf = request.form['identificacao']
         imagem = request.files['imagem']
-        # Verifica se CPF já está cadastrado
         usuarios = carregar_usuarios()
         if any(u['cpf'] == cpf for u in usuarios):
             flash("CPF já cadastrado.")
@@ -128,7 +173,6 @@ def cadastrar():
                 flash("Pessoa cadastrada com sucesso!")
             else:
                 flash("Erro ao cadastrar pessoa.")
-
             return redirect(url_for('cadastrar'))
 
     return render_template('cadastrar.html')
@@ -140,7 +184,6 @@ def lista():
     data = request.args.get('data', '')
 
     cursor = db.cursor(dictionary=True)
-
     query = "SELECT * FROM usuarios WHERE 1=1"
     valores = []
 
@@ -194,8 +237,8 @@ def editar(cpf):
             nova_url_imagem = url_for('static', filename=f'uploads/{nome_unico}')
             Url_Abs = os.path.abspath(caminho_arquivo)
         else:
-            relative_path = pessoa['endereco_imagem'].lstrip('/')  # Remove leading slash
-            base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current script
+            relative_path = pessoa['endereco_imagem'].lstrip('/')
+            base_dir = os.path.dirname(os.path.abspath(__file__))
             Url_Abs = os.path.abspath(os.path.join(base_dir, relative_path))
 
         atualizar_usuario(cpf, novo_cpf, nome, Url_Abs)
@@ -218,6 +261,39 @@ def excluir(cpf):
     flash("Registro excluído com sucesso!")
     return redirect(url_for('lista'))
 
+@app.route('/2fa_qr')
+def two_factor_qr():
+    secret = os.getenv('ADMIN_2FA_SECRET')
+    if not secret:
+        img = qrcode.make("2FA não configurado")
+    else:
+        totp = pyotp.TOTP(secret)
+        uri = totp.provisioning_uri(name="Admin TCC", issuer_name="Site TCC Facial")
+        img = qrcode.make(uri)
+
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    return send_file(buf, mimetype='image/png')
+
+@app.route('/2fa_setup', methods=['GET', 'POST'])
+@login_required
+def two_factor_setup():
+    secret = get_or_create_admin_2fa_secret()
+
+    if request.method == 'POST':
+        codigo = request.form['codigo_2fa']
+        totp = pyotp.TOTP(secret)
+        if totp.verify(codigo, valid_window=1):
+            flash("2FA configurado com sucesso! Faça login novamente.")
+            logout_user()
+            return redirect(url_for('login'))
+        else:
+            flash("Código 2FA inválido. Tente novamente.")
+
+    provisioning_url = pyotp.TOTP(secret).provisioning_uri(name="admin", issuer_name="Sistema de Cadastro Facial")
+    return render_template('2fa_setup.html', provisioning_url=provisioning_url)
+
+# --- Inicia a aplicação ---
 if __name__ == '__main__':
-    #app.run(debug=True)
     app.run(host='0.0.0.0', port=5000, debug=True)
