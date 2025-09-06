@@ -27,7 +27,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # Banco de dados MySQL
 db = mysql.connector.connect(
     host="127.0.0.1",
-    user="root",
+    user="Root",
     password="root",
     database="tcc_reconhece"
 )
