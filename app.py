@@ -15,7 +15,7 @@ import io
 from datetime import datetime
 
 from registrar_mudancas import carregar_buffer,debounce_worker, registrar_alteracao_buffer
-from utils import pegar_config
+from utils import pegar_config, enviar_backup_s3
 
 # Configuração
 load_dotenv()
@@ -67,6 +67,12 @@ def update_env_variable(key, value, env_path='.env'):
 
     # Recarrega a variável no ambiente
     load_dotenv(env_path, override=True)
+
+def is_dev_environment():
+    return os.getenv("FLASK_ENV", "").lower() in ("development", "dev")
+
+def dev_bypass_enabled():
+    return os.getenv("BYPASS_2FA", "false").lower() in ("1", "true", "yes")
 
 def get_or_create_admin_2fa_secret():
     """Retorna a chave secreta do admin ou cria uma nova"""
@@ -133,19 +139,20 @@ def login():
 
 
         if usuario == os.getenv("ADMIN_USERNAME") and senha == os.getenv("ADMIN_PASSWORD"):
-            if bypass :
+            #bypass logic
+            if is_dev_environment() and dev_bypass_enabled():
                 login_user(Admin())
+                flash("Dev bypass: logged in without entering 2FA (dev-only).")
                 return redirect(url_for('lista'))
             if not secret:
-                # Sem 2FA configurado: login direto e redireciona ao setup
+                # existing behaviour: no 2FA configured -> go to setup
                 login_user(Admin())
                 flash("Configure o 2FA antes de continuar.")
                 return redirect(url_for('two_factor_setup'))
             else:
-                # 2FA configurado: valida o código
                 codigo_2fa = request.form.get('codigo_2fa')
                 totp = pyotp.TOTP(secret)
-                if totp.verify(codigo_2fa, valid_window=1):  # tolerância de 30s para frente e trás
+                if totp.verify(codigo_2fa, valid_window=1):
                     login_user(Admin())
                     return redirect(url_for('lista'))
                 else:
@@ -184,8 +191,10 @@ def cadastrar():
 
             if salvar_usuario(cpf, nome, URL_ABSO):
                 flash("Pessoa cadastrada com sucesso!")
-                registrar_alteracao_buffer("usuarios", "adicionar", nome)
-                registrar_alteracao_buffer("imagens", "adicionar", url_imagem)
+                # registrar_alteracao_buffer("usuarios", "adicionar", nome)
+                # registrar_alteracao_buffer("imagens", "adicionar", url_imagem)
+                enviar_backup_s3(f'uploads/{nome_unico}', nome)
+                print("Teste User")
             else:
                 flash("Erro ao cadastrar pessoa.")
             return redirect(url_for('cadastrar'))

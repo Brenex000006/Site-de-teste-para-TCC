@@ -1,0 +1,9 @@
+flask
+flask-login
+werkzeug
+python-dotenv
+mysql-connector-python
+pyotp
+qrcode
+requests
+boto3
