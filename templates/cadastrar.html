@@ -1,20 +1,272 @@
-{% extends 'base.html' %}
-{% block title %}Cadastrar Pessoa{% endblock %}
-{% block content %}
-<h2>Cadastrar Novo Usuário</h2>
-<form method="POST" enctype="multipart/form-data">
-    <div class="mb-3">
-        <label for="nome" class="form-label">Nome:</label>
-        <input type="text" class="form-control" id="nome" name="nome" required>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastrar - Sistema</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #e9f0fb 0%, #f6f8fb 100%);
+            display:flex;
+            flex-direction:column;
+            color:#111;
+        }
+
+        .browser-bar {
+            position:fixed;
+            top:0;
+            left:0;
+            right:0;
+            height:56px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:0 20px;
+            background:rgba(255,255,255,0.95);
+            border-bottom:1px solid rgba(0,0,0,0.06);
+            z-index:1000;
+        }
+
+        .browser-dots {
+            display:flex;
+            gap:8px;
+        }
+
+        .dot {
+            width:12px;
+            height:12px;
+            border-radius:50%;
+        }
+
+        .dot.red {
+            background:#ff5f56;
+        }
+
+        .dot.yellow {
+            background:#ffbd2e;
+        }
+
+        .dot.green {
+            background:#27ca3f;
+        }
+
+        .browser-controls {
+            display:flex;
+            gap:12px;
+            align-items:center;
+        }
+
+        .mode-toggle {
+            background:#111;
+            color:#fff;
+            border:none;
+            padding:6px 10px;
+            border-radius:6px;
+            cursor:pointer;
+        }
+
+        .logout-btn {
+            display:none;
+        }
+
+        .content {
+            flex:1;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            padding:80px 20px 40px;
+        }
+
+        .form-container {
+            width:100%;
+            max-width:480px;
+            background:white;
+            padding:28px;
+            border-radius:12px;
+            box-shadow:0 2px 8px rgba(0,0,0,0.08);
+            text-align:left;
+        }
+
+        h1 {
+            margin-bottom:8px;
+            font-size:28px;
+            font-weight:600;
+            text-align:center;
+        }
+
+        .subtitle {
+            margin-bottom:18px;
+            color:#666;
+            font-size:14px;
+            text-align:center;
+        }
+
+        label {
+            display:block;
+            text-align:left;
+            font-size:14px;
+            margin-bottom:6px;
+            font-weight:500;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="file"] {
+            width:100%;
+            padding:12px;
+            border-radius:6px;
+            border:1px solid rgba(0,0,0,0.12);
+            margin-bottom:18px;
+            font-size:14px;
+            box-sizing:border-box;
+        }
+
+        .btn {
+            width:100%;
+            padding:12px;
+            background:#111;
+            color:#fff;
+            border:none;
+            border-radius:6px;
+            font-weight:600;
+            cursor:pointer;
+        }
+
+        .btn:hover {
+            background:#2f4f4f;
+            color:#fff;
+        }
+
+        .secondary-link {
+            height:23px;
+            border:none;
+            border-radius:6px;
+            display:block;
+            margin-top:12px;
+            text-align:center;
+            text-decoration:none;
+            font-size:14px;
+            font-weight:600;
+            background:#1c1c1c;
+            color:#fff;
+            padding:10px;
+        }
+
+        .secondary-link:hover {
+            background:#2f4f4f;
+            color:#fff;
+        }
+
+        /* Dark mode */
+
+        body.dark-mode {
+            background:#000;
+            color:#fff;
+        }
+
+        body.dark-mode .browser-bar {
+            background:rgba(16,16,16,0.95);
+        }
+
+        body.dark-mode .form-container {
+            background:#111;
+            color:#ddd;
+        }
+
+        body.dark-mode button {
+            background:#363636;
+            color:#ddd;
+        }
+
+        body.dark-mode button:hover {
+            background:#696969;
+            color:#ddd;
+        }
+
+        body.dark-mode input {
+            background:#1a1a1a;
+            color:#ddd;
+            border:1px solid rgba(255,255,255,0.08);
+        }
+
+        body.dark-mode .secondary-link {
+            background:#363636;
+            color:#ddd;
+        }
+
+        body.dark-mode .secondary-link:hover {
+            background:#696969;
+            color:#ddd;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="browser-bar">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div class="browser-dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div>
+            <strong>Cadastro Facial</strong>
+        </div>
+        <div class="browser-controls">
+            <span id="modeText">MODO : DIA</span>
+            <button id="themeToggle" class="mode-toggle">🌙</button>
+        </div>
     </div>
-    <div class="mb-3">
-        <label for="identificacao" class="form-label">CPF:</label>
-        <input type="text" class="form-control" id="identificacao" name="identificacao" required>
-    </div>
-    <div class="mb-3">
-        <label for="imagem" class="form-label">Imagem:</label>
-        <input type="file" class="form-control" id="imagem" name="imagem" accept="image/*" required>
-    </div>
-    <button type="submit" class="btn btn-primary">Cadastrar</button>
-</form>
-{% endblock %}
+
+    <main class="content">
+        <div class="form-container">
+            <h1>Cadastrar Usuário</h1>
+            <p class="subtitle">Preencha os dados abaixo para adicionar um novo usuário</p>
+
+            <form method="POST" action="{{ url_for('cadastrar') }}" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
+
+                <label for="nome">Nome</label>
+                {{ form.nome(class="form-control", id="nome") }}
+
+                <label for="email">E-mail</label>
+                {{ form.email(class="form-control", id="email") }}
+
+                <label for="endereco_imagem">Imagem (opcional)</label>
+                {{ form.endereco_imagem(id="endereco_imagem") }}
+
+                <button type="submit" class="btn">Cadastrar</button>
+            </form>
+
+            <a href="{{ url_for('lista') }}" class="secondary-link">Voltar para a lista</a>
+        </div>
+    </main>
+
+    <script>
+        (function(){
+            const modeText=document.getElementById("modeText");
+            const themeToggle=document.getElementById("themeToggle");
+            function applyTheme(theme){
+                if(theme==="dark"){
+                    document.body.classList.add("dark-mode");
+                    modeText.textContent="MODO : NOITE";
+                    themeToggle.textContent="☀️";
+                } else {
+                    document.body.classList.remove("dark-mode");
+                    modeText.textContent="MODO : DIA";
+                    themeToggle.textContent="🌙";
+                }
+            }
+            const saved=localStorage.getItem("site-theme")||"light";
+            applyTheme(saved);
+            themeToggle.addEventListener("click",()=>{
+                const next=document.body.classList.contains("dark-mode")?"light":"dark";
+                applyTheme(next);
+                localStorage.setItem("site-theme",next);
+            });
+        })();
+    </script>
+</body>
+</html>
