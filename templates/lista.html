@@ -1,54 +1,351 @@
-{% extends 'base.html' %}
-{% block title %}Lista de Usuários{% endblock %}
-{% block content %}
-<h2>Usuários Cadastrados</h2>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Moradores Cadastrados</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
+        }
 
-<form method="GET" class="row g-3 mb-4">
-    <div class="col-md-4">
-        <input type="text" class="form-control" name="filtro" placeholder="Nome ou CPF" value="{{ filtro }}">
-    </div>
-    <div class="col-md-4">
-        <input type="date" class="form-control" name="data" value="{{ data }}">
-    </div>
-    <div class="col-md-4">
-        <button type="submit" class="btn btn-primary">Filtrar</button>
-        <a href="{{ url_for('lista') }}" class="btn btn-secondary">Limpar</a>
-    </div>
-</form>
+        body {
+            background: linear-gradient(135deg,#e9f0fb 0%, #f6f8fb 100%);
+            color: #111;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
 
-<a href="{{ url_for('cadastrar') }}" class="btn btn-success mb-3">Novo Cadastro</a>
+        .browser-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            background: rgba(255,255,255,0.95);
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            z-index: 1000;
+            box-sizing: border-box;
+        }
 
-<table class="table table-bordered table-striped">
-    <thead class="table-dark">
-        <tr>
-            <th>Imagem</th>
-            <th>Nome</th>
-            <th>CPF</th>
-            <th>Data de Cadastro</th>
-            <th>Ações</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for pessoa in pessoas %}
-        <tr>
-            <td>
-                {% if pessoa.endereco_imagem %}
-                    <img src="{{ pessoa.endereco_imagem }}" class="img-thumbnail" width="100">
-                {% else %}
-                    <span>Sem imagem</span>
-                {% endif %}
-            </td>
-            <td>{{ pessoa.nome }}</td>
-            <td>{{ pessoa.cpf }}</td>
-            <td>{{ pessoa.criado_em.strftime('%d/%m/%Y') if pessoa.criado_em else '' }}</td>
-            <td>
-                <a href="{{ url_for('editar', cpf=pessoa.cpf) }}" class="btn btn-warning btn-sm">Editar</a>
-                <form action="{{ url_for('excluir', cpf=pessoa.cpf) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');">
-                    <button type="submit" class="btn btn-danger btn-sm">Excluir</button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% endblock %}
+        .browser-dots { display:flex; gap:8px; align-items:center; }
+        .dot { width:12px; height:12px; border-radius:50%; }
+        .dot.red { background:#ff5f56; }
+        .dot.yellow { background:#ffbd2e; }
+        .dot.green { background:#27ca3f; }
+
+        .browser-controls {
+            display:flex;
+            gap:12px;
+            align-items:center;
+        }
+
+        .mode-toggle {
+            background:#111;
+            color:#fff;
+            border:none;
+            padding:6px 10px;
+            border-radius:6px;
+            cursor:pointer;
+            display:flex;
+            gap:8px;
+            align-items:center;
+        }
+
+        .logout-btn {
+            background:#c0392b;
+            color:white;
+            border:none;
+            padding:6px 12px;
+            border-radius:6px;
+            cursor:pointer;
+            text-decoration:none;
+            font-size:13px;
+        }
+
+        .content {
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 80px 20px 40px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h2 {
+            margin: 6px 0 18px;
+            font-size: 30px;
+            letter-spacing: 0.2px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .search-container {
+            width: 100%;
+            display:flex;
+            gap:10px;
+            justify-content:center;
+            align-items:center;
+            flex-wrap:wrap;
+            margin-bottom:18px;
+        }
+
+        .search-container input[type="text"],
+        .search-container input[type="date"] {
+            padding:10px 12px;
+            border-radius:6px;
+            border:1px solid rgba(0,0,0,0.12);
+            background:white;
+            min-width: 160px;
+            font-size:14px;
+        }
+
+        .search-container .btn {
+            padding:10px 14px;
+            border-radius:6px;
+            border:none;
+            cursor:pointer;
+            font-weight:600;
+            font-size:14px;
+        }
+
+        .btn-success {
+            background:#27ae60;
+            color:white;
+        }
+
+        .btn-primary {
+            background:#2980b9;
+            color:white;
+            height:40px;
+        }
+
+        .btn-secondary {
+            background:#7f8c8d;
+            color:white;
+        }
+
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            margin-top: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 760px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        }
+
+        th, td {
+            padding: 12px 10px;
+            border: 1px solid rgba(0,0,0,0.06);
+            text-align: left;
+            vertical-align: middle;
+            font-size: 14px;
+        }
+
+        thead th {
+            background: #f4f6f8;
+            color: #222;
+            font-weight: 600;
+            text-align: left;
+        }
+
+        tbody tr:nth-child(even) {
+            background: rgba(0,0,0,0.02);
+        }
+
+        img.img-thumbnail {
+            border-radius:6px;
+            display:block;
+        }
+
+        .actions {
+            display:flex;
+            gap:8px;
+            align-items:center;
+        }
+
+        .action-btn {
+            padding:6px 10px;
+            border-radius:6px;
+            border:none;
+            cursor:pointer;
+            font-size:13px;
+            height:36px;
+        }
+
+        .action-btn.edit {
+            width:35px;
+            height:23px;
+            background:#f1c40f;
+            color:#111;
+        }
+
+        .action-btn.delete {
+            background:#e74c3c;
+            color:#fff;
+        }
+
+        body.dark-mode {
+            background: #000;
+            color: #fff;
+        }
+
+        body.dark-mode button {
+            background:#363636;
+            color:#ddd;
+        }
+
+        body.dark-mode .browser-bar {
+            background: rgba(16,16,16,0.95);
+            border-bottom:1px solid rgba(255,255,255,0.05);
+        }
+
+        body.dark-mode .search-container input[type="text"],
+        body.dark-mode .search-container input[type="date"] {
+            background: #111;
+            color: #ddd;
+            border:1px solid rgba(255,255,255,0.06);
+        }
+
+        body.dark-mode thead th {
+            background: #0b0b0b;
+            color: #fff;
+        }
+
+        body.dark-mode th, body.dark-mode td {
+            border-color: rgba(255,255,255,0.06);
+        }
+
+        body.dark-mode tbody tr:nth-child(even) {
+            background: rgba(255,255,255,0.02);
+        }
+
+        body.dark-mode table {
+            background: #111;
+        }
+
+        @media (max-width: 900px) {
+            h2 { font-size: 24px; }
+            .search-container { gap:8px; }
+            .search-container input[type="text"],
+            .search-container input[type="date"] { min-width: 130px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="browser-bar" role="banner">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div class="browser-dots" aria-hidden="true">
+                <div class="dot red"></div>
+                <div class="dot yellow"></div>
+                <div class="dot green"></div>
+            </div>
+            <div style="font-weight:600; color:inherit;">Cadastro Facial</div>
+        </div>
+
+        <div class="browser-controls" role="navigation">
+            <span id="modeText">MODO - DIA</span>
+            <button id="themeToggle" class="mode-toggle" aria-label="Alternar tema">🌙</button>
+            <a href="{{ url_for('logout') }}" class="logout-btn">SAIR</a>
+        </div>
+    </div>
+
+    <main class="content" role="main">
+        <h2>Moradores Cadastrados</h2>
+
+        <form method="GET" class="search-container" role="search">
+            <a href="{{ url_for('cadastrar') }}" class="btn btn-success">Novo Cadastro</a>
+
+            <input type="text" name="filtro" placeholder="Nome ou E-mail" value="{{ filtro }}">
+            <input type="date" name="data" value="{{ data }}">
+
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+            <a href="{{ url_for('lista') }}" class="btn btn-secondary">Limpar</a>
+        </form>
+
+        <div class="table-wrapper" aria-live="polite">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Imagem</th>
+                        <th>Nome</th>
+                        <th>E-mail</th>
+                        <th>Data de Cadastro</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pessoa in pessoas %}
+                    <tr>
+                        <td style="width:80px;">
+                            {% if pessoa.endereco_imagem %}
+                                <img src="{{ pessoa.endereco_imagem }}" class="img-thumbnail" width="64" alt="foto {{ pessoa.nome }}">
+                            {% else %}
+                                <div style="width:64px; height:64px; background:#e6e6e6; border-radius:6px;"></div>
+                            {% endif %}
+                        </td>
+                        <td>{{ pessoa.nome }}</td>
+                        <td>{{ pessoa.email }}</td>
+                        <td>{{ pessoa.criado_em.strftime('%d/%m/%Y') if pessoa.criado_em else '' }}</td>
+                        <td>
+                            <div class="actions">
+                                <a href="{{ url_for('editar', email=pessoa.email) }}" class="action-btn edit" title="Editar">Editar</a>
+
+                                <form action="{{ url_for('excluir', email=pessoa.email) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="action-btn delete">Excluir</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        (function () {
+            const modeText = document.getElementById('modeText');
+            const themeToggle = document.getElementById('themeToggle');
+
+            function applyTheme(theme) {
+                if (theme === 'dark') {
+                    document.body.classList.add('dark-mode');
+                    modeText.textContent = 'MODO : NOITE';
+                    themeToggle.textContent = '☀️';
+                } else {
+                    document.body.classList.remove('dark-mode');
+                    modeText.textContent = 'MODO : DIA';
+                    themeToggle.textContent = '🌙';
+                }
+            }
+
+            const saved = localStorage.getItem('site-theme') || 'dark';
+            applyTheme(saved);
+
+            themeToggle.addEventListener('click', function () {
+                const isDark = document.body.classList.contains('dark-mode');
+                const next = isDark ? 'light' : 'dark';
+                applyTheme(next);
+                localStorage.setItem('site-theme', next);
+            });
+        })();
+    </script>
+</body>
+</html>

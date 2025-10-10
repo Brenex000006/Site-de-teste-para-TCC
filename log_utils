@@ -1,0 +1,23 @@
+from datetime import datetime, timezone
+
+
+def current_time():
+    return datetime.now(timezone.utc).isoformat()
+
+log_data = {
+        'start_time': current_time(),
+        'steps': []
+    }
+
+def log_step(step_name, status, details=None):
+    step_entry = {
+        'step_name': step_name,
+        'status': status,
+        'timestamp': current_time()
+    }
+    if details:
+        step_entry['details'] = details
+    log_data['steps'].append(step_entry)
+
+def get_log():
+    return log_data

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Sistema{% endblock %}</title>
+    <title>Recuperar Senha - Sistema</title>
     <style>
         html, body { height:100%; margin:0; padding:0; font-family:"Segoe UI", Roboto, Arial, sans-serif; }
         body {
@@ -11,7 +11,6 @@
             display:flex; flex-direction:column; color:#111;
         }
 
-        /* Barra superior estilo navegador */
         .browser-bar {
             position:fixed; top:0; left:0; right:0;
             height:56px; display:flex; justify-content:space-between; align-items:center;
@@ -26,74 +25,103 @@
 
         .browser-controls { display:flex; gap:12px; align-items:center; }
         .mode-toggle { background:#111; color:#fff; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; }
-        .logout-btn {
-            background:#f44336; color:#fff; border:none;
-            padding:6px 12px; border-radius:6px; cursor:pointer;
-        }
 
-        /* Conteúdo central */
         .content {
             flex:1; display:flex; justify-content:center; align-items:center;
             padding:80px 20px 40px;
         }
-        .form-container, .page-container {
-            width:100%; max-width:800px; background:white; padding:28px;
-            border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08);
-        }
-        .form-container { max-width:400px; text-align:center; }
 
-        h1, h2 { margin-bottom:16px; font-weight:600; }
+        .form-container {
+            width:100%; max-width:400px; background:white; padding:28px;
+            border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); text-align:center;
+        }
+
+        h1 { margin-bottom:8px; font-size:28px; font-weight:600; }
         .subtitle { margin-bottom:28px; color:#666; font-size:14px; }
 
         label { display:block; text-align:left; font-size:14px; margin-bottom:6px; font-weight:500; }
-        input, select {
+        input {
             width:100%; padding:12px; border-radius:6px; border:1px solid rgba(0,0,0,0.12);
             margin-bottom:18px; font-size:14px;
         }
+
         .btn {
-            padding:10px 18px; border:none; border-radius:6px;
-            font-weight:600; cursor:pointer;
+            width:100%; padding:12px; background:#111; color:#fff;
+            border:none; border-radius:6px; font-weight:600; cursor:pointer;
         }
-        .btn-primary { background:#111; color:#fff; }
-        .btn-secondary { background:#ccc; color:#111; }
+
+        .btn:hover {
+            background:#333;
+        }
+
+        .btn-secondary {
+            width:100%; padding:12px; background:#777; color:#fff;
+            border:none; border-radius:6px; font-weight:600; cursor:pointer;
+            margin-top:12px;
+        }
 
         /* Dark mode */
-        body.dark-mode { background:#000; color:#fff; }
-        body.dark-mode .browser-bar { background:rgba(16,16,16,0.95); }
-        body.dark-mode .form-container, body.dark-mode .page-container { background:#111; color:#ddd; }
-        body.dark-mode input, body.dark-mode select { background:#1a1a1a; color:#ddd; border:1px solid rgba(255,255,255,0.08); }
-        body.dark-mode .btn-primary { background:#fff; color:#111; }
-        body.dark-mode .btn-secondary { background:#444; color:#ddd; }
+        body.dark-mode {
+            background:#000; color:#fff;
+        }
+
+        body.dark-mode .browser-bar {
+            background:rgba(16,16,16,0.95);
+        }
+
+        body.dark-mode .form-container {
+            background:#111; color:#ddd;
+        }
+
+        body.dark-mode input {
+            background:#1a1a1a; color:#ddd; border:1px solid rgba(255,255,255,0.08);
+        }
+
+        body.dark-mode .btn-secondary {
+            background:#333;
+        }
+
+        body.dark-mode .btn-secondary:hover {
+            background:#575757;
+            color:#fff;
+        }
+
+        body.dark-mode .btn {
+            background:#fff; color:#111;
+        }
+
+        body.dark-mode .btn:hover {
+            background:#ddd;
+        }
+
     </style>
 </head>
 <body>
-    <!-- Barra superior -->
     <div class="browser-bar">
         <div style="display:flex; align-items:center; gap:12px;">
-            <div class="browser-dots">
-                <div class="dot red"></div>
-                <div class="dot yellow"></div>
-                <div class="dot green"></div>
-            </div>
+            <div class="browser-dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div>
             <strong>Cadastro Facial</strong>
         </div>
         <div class="browser-controls">
             <span id="modeText">MODO : DIA</span>
             <button id="themeToggle" class="mode-toggle">🌙</button>
-            {% if session.get("usuario") %}
-            <form action="{{ url_for('logout') }}" method="post" style="margin:0;">
-                <button type="submit" class="logout-btn">SAIR</button>
-            </form>
-            {% endif %}
         </div>
     </div>
 
-    <!-- Conteúdo -->
     <main class="content">
-        {% block content %}{% endblock %}
+        <div class="form-container">
+            <h1>Recuperar Senha</h1>
+            <p class="subtitle">Digite seu e-mail para redefinir sua senha</p>
+            <form method="POST">
+                <label for="email">E-mail</label>
+                <input type="email" id="email" name="email" required>
+                <button type="submit" class="btn">Enviar link de recuperação</button>
+            </form>
+            <!-- Botão de voltar ao login -->
+            <button onclick="window.location.href='{{ url_for('login') }}'" class="btn-secondary">Voltar ao Login</button>
+        </div>
     </main>
 
-    <!-- Script de tema -->
     <script>
         (function(){
             const modeText=document.getElementById("modeText");

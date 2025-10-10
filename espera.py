@@ -14,22 +14,23 @@ from dotenv import load_dotenv
 # Flask-WTF e CSRF
 from flask_wtf import FlaskForm, CSRFProtect
 from flask_wtf.csrf import generate_csrf
-from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import DataRequired, Email
-from flask_wtf.file import FileField, FileAllowed
+from wtforms import StringField, PasswordField
+from wtforms.validators import DataRequired
 
 from registrar_mudancas import carregar_buffer, debounce_worker, registrar_alteracao_buffer
-from utils import pegar_config, enviar_backup_s3
+from utils import pegar_config
 
-from utils import novo_step_log
+
+
+
+
 
 # Configuração
 load_dotenv()
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY') or 'dev-secret'
+app.secret_key = os.getenv('SECRET_KEY')
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
 
 # Habilita CSRF
 csrf = CSRFProtect(app)
@@ -39,7 +40,7 @@ def inject_csrf_token():
     """Permite usar {{ csrf_token() }} em formulários que não usam FlaskForm"""
     return dict(csrf_token=generate_csrf)
 
-# Banco de dados MySQL (ajuste credenciais conforme seu .env)
+# Banco de dados MySQL
 db = mysql.connector.connect(
     host="127.0.0.1",
     user="Root",
@@ -52,14 +53,12 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-
-
 class Admin(UserMixin):
     id = 1
 
 @login_manager.user_loader
 def load_user(user_id):
-    if str(user_id) == "1":
+    if user_id == "1":
         return Admin()
     return None
 
@@ -68,26 +67,15 @@ class LoginForm(FlaskForm):
     username = StringField("Usuário", validators=[DataRequired()])
     password = PasswordField("Senha", validators=[DataRequired()])
 
-class PessoaForm(FlaskForm):
-    nome = StringField("Nome", validators=[DataRequired()])
-    email = StringField("E-mail", validators=[DataRequired(), Email()])
-    endereco_imagem = FileField("Imagem", validators=[FileAllowed(['jpg','jpeg','png','gif'], 'Apenas imagens!')])
-    submit = SubmitField("Salvar")
-
-def is_dev_environment():
-    return os.getenv("FLASK_ENV", "").lower() in ("development", "dev")
-
-def dev_bypass_enabled():
-    return os.getenv("BYPASS_2FA", "false").lower() in ("1", "true", "yes")
 
 # --- Funções auxiliares ---
 def update_env_variable(key, value, env_path='.env'):
     lines = []
     if os.path.exists(env_path):
-        with open(env_path, 'r', encoding='utf-8') as f:
+        with open(env_path, 'r') as f:
             lines = f.readlines()
 
-    with open(env_path, 'w', encoding='utf-8') as f:
+    with open(env_path, 'w') as f:
         found = False
         for line in lines:
             if line.startswith(f"{key}="):
@@ -147,16 +135,6 @@ def excluir_usuario(email):
     cursor.execute("DELETE FROM usuarios WHERE email = %s", (email,))
     db.commit()
 
-# Ajusta o caminho salvo para uso em templates (/static/...)
-def imagem_corrigida(pessoas):
-    for pessoa in pessoas:
-        try:
-            pessoa['endereco_imagem'] = "/static/" + str(pessoa['endereco_imagem'].replace("\\", "/").split("/static/")[1])
-        except Exception:
-            # se algo inesperado, manter como está
-            pass
-    return pessoas
-
 # --- Rotas ---
 @app.route('/')
 def index():
@@ -175,31 +153,24 @@ def login():
         senha = form.password.data
 
         if usuario == os.getenv("ADMIN_USERNAME") and senha == os.getenv("ADMIN_PASSWORD"):
-            # bypass logic
-            if is_dev_environment() and dev_bypass_enabled():
+            if bypass:
                 login_user(Admin())
-                flash("Dev bypass: logged in without entering 2FA (dev-only).")
-                novo_step_log("Tentativa de Login", "Sucesso", f"Usuario {usuario} logado.")
                 return redirect(url_for('lista'))
 
             if not secret:
                 login_user(Admin())
                 flash("Configure o 2FA antes de continuar.", "info")
-                novo_step_log("Tentativa de Login", "Sucesso", f"Usuario {usuario} logado.")
                 return redirect(url_for('two_factor_setup'))
             else:
                 codigo_2fa = request.form.get('codigo_2fa')
                 totp = pyotp.TOTP(secret)
                 if totp.verify(codigo_2fa, valid_window=1):
                     login_user(Admin())
-                    novo_step_log("Tentativa de Login", "Sucesso", f"Usuario {usuario} logado.")
                     return redirect(url_for('lista'))
                 else:
                     flash("Código 2FA inválido.", "danger")
-                    novo_step_log("Tentativa de Login", "Falha", f"Credenciais inválidas para {usuario}.")
         else:
             flash("Credenciais inválidas.", "danger")
-            novo_step_log("Tentativa de Login", "Falha", f"Credenciais inválidas para {usuario}.")
 
     return render_template('login.html', form=form, secret=secret)
 
@@ -228,45 +199,32 @@ def logout():
 @app.route('/cadastrar', methods=['GET', 'POST'])
 @login_required
 def cadastrar():
-    form = PessoaForm()
-    if form.validate_on_submit():
-        nome = form.nome.data
-        email = form.email.data
-        uploaded = form.endereco_imagem.data  # FileStorage ou None
-
+    if request.method == 'POST':
+        nome = request.form['nome']
+        email = request.form['email']
+        imagem = request.files['imagem']
         usuarios = carregar_usuarios()
-        if any(u.get('email') == email for u in usuarios):
-            flash("Email já cadastrado.", "warning")
+        if any(u['email'] == email for u in usuarios):
+            flash("Email já cadastrado.")
             return redirect(url_for('cadastrar'))
 
-        URL_ABSO = None
-        url_imagem = None
-        if uploaded:
-            # some FileFields may be empty (no filename)
-            filename = getattr(uploaded, 'filename', None)
-            if filename:
-                nome_arquivo = secure_filename(filename)
-                nome_unico = f"{uuid.uuid4()}_{nome_arquivo}"
-                caminho_arquivo = os.path.join(app.config['UPLOAD_FOLDER'], nome_unico)
-                uploaded.save(caminho_arquivo)
-                url_imagem = url_for('static', filename=f'uploads/{nome_unico}')
-                URL_ABSO = os.path.abspath(caminho_arquivo)
-                novo_step_log("Upload de Imagem", "Sucesso", f"Imagem {nome_unico} enviada para {email}.")
+        if imagem:
+            nome_arquivo = secure_filename(imagem.filename)
+            nome_unico = f"{uuid.uuid4()}_{nome_arquivo}"
+            caminho_arquivo = os.path.join(app.config['UPLOAD_FOLDER'], nome_unico)
+            imagem.save(caminho_arquivo)
+            url_imagem = url_for('static', filename=f'uploads/{nome_unico}')
+            URL_ABSO = os.path.abspath(caminho_arquivo)
 
-        if salvar_usuario(email, nome, URL_ABSO):
-            flash("Pessoa cadastrada com sucesso!", "success")
-            novo_step_log("Cadastro de Usuário", "Sucesso", f"Usuário {email} cadastrado.")
-            #registrar_alteracao_buffer("usuarios", "adicionar", nome)
-            if url_imagem:
-                enviar_backup_s3(f'uploads/{nome_unico}', nome)
-                novo_step_log("Upload de Imagem", "Sucesso", f"Imagem {nome_unico} enviada para S3.")
-            return redirect(url_for('lista'))
-        else:
-            flash("Erro ao cadastrar pessoa.", "danger")
-            novo_step_log("Cadastro de Usuário", "Falha", f"Falha ao cadastrar {email}.")
+            if salvar_usuario(email, nome, URL_ABSO):
+                flash("Pessoa cadastrada com sucesso!")
+                registrar_alteracao_buffer("usuarios", "adicionar", nome)
+                registrar_alteracao_buffer("imagens", "adicionar", url_imagem)
+            else:
+                flash("Erro ao cadastrar pessoa.")
             return redirect(url_for('cadastrar'))
 
-    return render_template('cadastrar.html', form=form)
+    return render_template('cadastrar.html')
 
 @app.route('/lista', methods=['GET'])
 @login_required
@@ -294,60 +252,55 @@ def lista():
 
     return render_template('lista.html', pessoas=pessoas, filtro=filtro, data=data)
 
+def imagem_corrigida(pessoas):
+    for pessoa in pessoas:
+        pessoa['endereco_imagem'] = "/static/" + str(pessoa['endereco_imagem'].replace("\\", "/").split("/static/")[1])
+    return pessoas
+
 @app.route('/editar/<email>', methods=['GET', 'POST'])
 @login_required
 def editar(email):
     usuarios = carregar_usuarios()
     usuarios = imagem_corrigida(usuarios)
-    pessoa = next((u for u in usuarios if u.get('email') == email), None)
+    pessoa = next((u for u in usuarios if u['email'] == email), None)
     if not pessoa:
-        flash("Pessoa não encontrada.", "warning")
-        novo_step_log("Edição de Usuário", "Falha", f"Usuário {email} não encontrado.")
+        flash("Pessoa não encontrada.")
         return redirect(url_for('lista'))
 
-    form = PessoaForm()
-    # pré-preencher formulário ao abrir (GET)
-    if request.method == 'GET':
-        form.nome.data = pessoa.get('nome')
-        form.email.data = pessoa.get('email')
+    if request.method == 'POST':
+        nome = request.form['nome']
+        novo_email = request.form['novo_email']
+        nova_imagem = request.files.get('imagem')
 
-    if form.validate_on_submit():
-        nome = form.nome.data
-        novo_email = form.email.data
-        uploaded = form.endereco_imagem.data
+        if nova_imagem and nova_imagem.filename:
+            imagem_antiga = pessoa['endereco_imagem'].replace('/static/', '')
+            caminho_antigo = os.path.join('static', imagem_antiga)
+            if os.path.exists(caminho_antigo):
+                os.remove(caminho_antigo)
 
-        Url_Abs = pessoa.get('endereco_imagem')  # default: atual
-        if uploaded:
-            filename = getattr(uploaded, 'filename', None)
-            if filename:
-                # remove imagem antiga caso exista
-                try:
-                    imagem_antiga = pessoa.get('endereco_imagem', '').replace('/static/', '')
-                    caminho_antigo = os.path.join('static', imagem_antiga)
-                    if os.path.exists(caminho_antigo):
-                        os.remove(caminho_antigo)
-                except Exception:
-                    pass
-
-                nome_arquivo = secure_filename(filename)
-                nome_unico = f"{uuid.uuid4()}_{nome_arquivo}"
-                caminho_arquivo = os.path.join(app.config['UPLOAD_FOLDER'], nome_unico)
-                uploaded.save(caminho_arquivo)
-                Url_Abs = os.path.abspath(caminho_arquivo)
-                registrar_alteracao_buffer("imagens", "adicionar", nome_unico)
+            nome_arquivo = secure_filename(nova_imagem.filename)
+            nome_unico = f"{uuid.uuid4()}_{nome_arquivo}"
+            caminho_arquivo = os.path.join(app.config['UPLOAD_FOLDER'], nome_unico)
+            nova_imagem.save(caminho_arquivo)
+            Url_Abs = os.path.abspath(caminho_arquivo)
+            registrar_alteracao_buffer("usuarios", "deletar", nome)
+            registrar_alteracao_buffer("imagens", "deletar", nome_unico)
+        else:
+            relative_path = pessoa['endereco_imagem'].lstrip('/')
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            Url_Abs = os.path.abspath(os.path.join(base_dir, relative_path))
 
         atualizar_usuario(email, novo_email, nome, Url_Abs)
-        flash("Cadastro atualizado com sucesso!", "success")
-        novo_step_log("Edição de Usuário", "Sucesso", f"Usuário {email} atualizado.")
+        flash("Cadastro atualizado com sucesso!")
         return redirect(url_for('lista'))
 
-    return render_template('editar.html', pessoa=pessoa, form=form)
+    return render_template('editar.html', pessoa=pessoa)
 
 @app.route('/excluir/<email>', methods=['POST'])
 @login_required
 def excluir(email):
     usuarios = carregar_usuarios()
-    pessoa = next((u for u in usuarios if u.get('email') == email), None)
+    pessoa = next((u for u in usuarios if u['email'] == email), None)
     if pessoa:
         imagem_url = pessoa.get('endereco_imagem', '').replace('/static/', '')
         caminho = os.path.join('static', imagem_url)
@@ -356,8 +309,7 @@ def excluir(email):
             registrar_alteracao_buffer("imagens", "deletar", imagem_url)
             os.remove(caminho)
     excluir_usuario(email)
-    flash("Registro excluído com sucesso!", "success")
-    novo_step_log("Exclusão de Usuário", "Sucesso", f"Usuário {email} excluído.")
+    flash("Registro excluído com sucesso!")
     return redirect(url_for('lista'))
 
 @app.route('/2fa_qr')
@@ -399,10 +351,8 @@ def two_factor_setup():
 # --- Inicia a aplicação ---
 if __name__ == '__main__':
     lbd_url = pegar_config("LBD")
-   
     print(lbd_url)
     if lbd_url:
-        novo_step_log("App Startup", "Success", f"LBD URL: {lbd_url}")
         carregar_buffer()
         threading.Thread(target=debounce_worker, daemon=True).start()
         app.run(host='0.0.0.0', port=5000, debug=True)
