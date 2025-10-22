@@ -2,44 +2,142 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>{% block title %}Sistema de Cadastro{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema de Reconhecimento Facial{% endblock %}</title>
     <style>
-        body {
-            background-color: #f8f9fa;
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #e9f0fb 0%, #f6f8fb 100%);
+            color: #111;
         }
-        .container {
-            max-width: 800px;
+
+        .browser-bar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 56px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            z-index: 1000;
+        }
+
+        .browser-dots {
+            display: flex;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 12px; height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot.red { background: #ff5f56; }
+        .dot.yellow { background: #ffbd2e; }
+        .dot.green { background: #27ca3f; }
+
+        .browser-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .mode-toggle {
+            background: #111;
+            color: #fff;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .logout-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .logout-btn:hover { background: #c0392b; }
+
+        .content {
+            padding-top: 70px;
+            padding-bottom: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Tema escuro */
+        body.dark-mode {
+            background: #000;
+            color: #fff;
+        }
+        body.dark-mode .browser-bar {
+            background: rgba(16, 16, 16, 0.95);
+        }
+        body.dark-mode .mode-toggle {
+            background: #363636;
         }
     </style>
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
-    <div class="container">
-        <a class="navbar-brand" href="{{ url_for('lista') }}">Cadastro Facial</a>
-        <div class="collapse navbar-collapse">
-            <ul class="navbar-nav ms-auto">
-                {% if current_user.is_authenticated %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('logout') }}">Sair</a>
-                    </li>
-                {% endif %}
-            </ul>
+    <div class="browser-bar">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div class="browser-dots">
+                <div class="dot red"></div>
+                <div class="dot yellow"></div>
+                <div class="dot green"></div>
+            </div>
+            <strong>Cadastro Facial</strong>
+        </div>
+        <div class="browser-controls">
+            <span id="modeText">MODO : DIA</span>
+            <button id="themeToggle" class="mode-toggle">🌙</button>
+            {% if current_user.is_authenticated %}
+                <form action="{{ url_for('logout') }}" method="post" style="display:inline;">
+                    <button type="submit" class="logout-btn">Sair</button>
+                </form>
+            {% endif %}
         </div>
     </div>
-</nav>
 
-<div class="container">
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <div class="alert alert-info">
-          {{ messages[0] }}
-        </div>
-      {% endif %}
-    {% endwith %}
+    <main class="content">
+        {% block content %}{% endblock %}
+    </main>
 
-    {% block content %}{% endblock %}
-</div>
-
+    <script>
+        (function(){
+            const modeText=document.getElementById("modeText");
+            const themeToggle=document.getElementById("themeToggle");
+            function applyTheme(theme){
+                if(theme==="dark"){
+                    document.body.classList.add("dark-mode");
+                    modeText.textContent="MODO : NOITE";
+                    themeToggle.textContent="☀️";
+                } else {
+                    document.body.classList.remove("dark-mode");
+                    modeText.textContent="MODO : DIA";
+                    themeToggle.textContent="🌙";
+                }
+            }
+            const saved=localStorage.getItem("site-theme")||"light";
+            applyTheme(saved);
+            themeToggle.addEventListener("click",()=>{
+                const next=document.body.classList.contains("dark-mode")?"light":"dark";
+                applyTheme(next);
+                localStorage.setItem("site-theme",next);
+            });
+        })();
+    </script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>
