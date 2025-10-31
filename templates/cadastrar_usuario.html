@@ -40,10 +40,9 @@
         .subtitle { margin-bottom:18px; color:#666; font-size:14px; text-align:center; }
 
         label { display:block; font-size:14px; margin-bottom:6px; font-weight:500; }
-        input[type="text"], input[type="email"], input[type="password"], select {
+        input[type="text"], input[type="email"], input[type="password"], select, input[type="file"] {
             width:100%; padding:12px; border-radius:6px; border:1px solid rgba(0,0,0,0.12);
             margin-bottom:18px; font-size:14px; box-sizing:border-box;
-            background:white;
         }
 
         .btn {
@@ -59,7 +58,6 @@
         }
         .secondary-link:hover { background:#2f4f4f; }
 
-        /* Tema escuro */
         body.dark-mode { background:#000; color:#fff; }
         body.dark-mode .browser-bar { background:rgba(16,16,16,0.95); }
         body.dark-mode .form-container { background:#111; color:#ddd; }
@@ -87,6 +85,20 @@
         .flash-success { background-color:#28a745; border:1px solid #1e7e34; }
         .flash-danger { background-color:#dc3545; border:1px solid #b02a37; }
         .flash-warning { background-color:#ffc107; border:1px solid #e0a800; color:#111; }
+
+        /* preview da imagem */
+        #previewImagem {
+            display:none;
+            margin-top:-10px;
+            margin-bottom:16px;
+            text-align:center;
+        }
+        #previewImagem img {
+            max-width:150px;
+            border-radius:8px;
+            margin-top:6px;
+            box-shadow:0 2px 6px rgba(0,0,0,0.2);
+        }
     </style>
 </head>
 <body>
@@ -110,36 +122,40 @@
             <h1>Cadastro de Usuário</h1>
             <p class="subtitle">Preencha os dados abaixo para criar um novo usuário no sistema</p>
 
-            <!-- Exibir mensagens flash -->
             {% with messages = get_flashed_messages(with_categories=true) %}
               {% if messages %}
                 {% for category, msg in messages %}
-                  <div class="flash-message flash-{{ category }}" id="flashMessage">{{ msg }}</div>
+                  {% if category in ['danger', 'warning', 'success'] %}
+                    <div class="flash-message flash-{{ category }}" id="flashMessage">{{ msg }}</div>
+                  {% endif %}
                 {% endfor %}
               {% endif %}
             {% endwith %}
 
-            <!-- FORMULÁRIO COM TOKEN CSRF -->
-            <form method="POST" action="{{ url_for('cadastrar_usuario') }}">
-                <!-- ADIÇÃO: token CSRF -->
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <form method="POST" action="{{ url_for('cadastrar_usuario') }}" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
 
                 <label for="nome">Nome</label>
-                <input type="text" id="nome" name="nome" required>
+                {{ form.nome(class="form-control", id="nome") }}
 
                 <label for="email">E-mail</label>
-                <input type="email" id="email" name="email" required>
+                {{ form.email(class="form-control", id="email") }}
 
                 <label for="senha">Senha</label>
-                <input type="password" id="senha" name="senha" required>
+                {{ form.senha(class="form-control", id="senha") }}
 
                 <label for="tipo">Tipo de Usuário</label>
+                {{ form.tipo(class="form-control", id="tipo") }}
 
-                <select name="tipo" class="form-select" required>
-                    <option value="admin">Administrador</option>
-                    <option value="comum">Usuário</option>
-                </select>
-
+                <!-- Campo de imagem visível apenas para tipo 'comum' -->
+                <div id="imagemSection" style="display:none;">
+                    <label for="endereco_imagem">Imagem (opcional)</label>
+                    {{ form.endereco_imagem(id="endereco_imagem") }}
+                    <div id="previewImagem">
+                        <p style="font-size:13px; color:#888;">Pré-visualização:</p>
+                        <img id="imgPreview" src="#" alt="Prévia da imagem">
+                    </div>
+                </div>
 
                 <button type="submit" class="btn">Cadastrar Usuário</button>
             </form>
@@ -149,7 +165,40 @@
     </main>
 
     <script>
-        // Tema escuro/claro
+        const tipoSelect = document.getElementById("tipo");
+        const imagemSection = document.getElementById("imagemSection");
+        const inputImagem = document.getElementById("endereco_imagem");
+        const previewDiv = document.getElementById("previewImagem");
+        const imgPreview = document.getElementById("imgPreview");
+
+        function atualizarCampoImagem() {
+            imagemSection.style.display = tipoSelect.value.toLowerCase() === "comum" ? "block" : "none";
+        }
+
+        if (tipoSelect) {
+            tipoSelect.addEventListener("change", atualizarCampoImagem);
+            atualizarCampoImagem(); // executa no carregamento
+        }
+
+        // Pré-visualização da imagem
+        if (inputImagem) {
+            inputImagem.addEventListener("change", function() {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        imgPreview.src = e.target.result;
+                        previewDiv.style.display = "block";
+                    }
+                    reader.readAsDataURL(file);
+                } else {
+                    previewDiv.style.display = "none";
+                    imgPreview.src = "#";
+                }
+            });
+        }
+
+        // Tema claro/escuro
         (function(){
             const modeText=document.getElementById("modeText");
             const themeToggle=document.getElementById("themeToggle");
@@ -173,12 +222,13 @@
             });
         })();
 
-        // Exibir mensagens flash
+        // Flash messages
         document.addEventListener("DOMContentLoaded",()=>{
             const flash=document.getElementById("flashMessage");
             if(flash){
                 flash.style.display="block";
-                setTimeout(()=>flash.style.display="none",3000);
+                setTimeout(()=>flash.style.opacity="0",2500);
+                setTimeout(()=>flash.remove(),3200);
             }
         });
     </script>

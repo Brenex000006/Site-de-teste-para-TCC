@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Moradores Cadastrados</title>
+    <title>Usuários Cadastrados</title>
     <style>
         html, body {
             height: 100%;
@@ -226,11 +226,9 @@
     </div>
 
     <main class="content">
-        <h2>Moradores Cadastrados</h2>
+        <h2>Usuários Cadastrados</h2>
 
         <form method="GET" class="search-container">
-            <a href="{{ url_for('cadastrar') }}" class="btn btn-success">Novo Cadastro</a>
-
             {% if current_user.tipo == 'admin' %}
                 <a href="{{ url_for('cadastrar_usuario') }}" class="btn btn-admin">Cadastrar Usuário</a>
             {% endif %}
@@ -249,7 +247,7 @@
                         <th>Nome</th>
                         <th>E-mail</th>
                         {% if current_user.tipo == 'admin' %}
-                            <th>Dono</th>
+                            <th>Tipo</th>
                         {% endif %}
                         <th>Data de Cadastro</th>
                         <th>Ações</th>
@@ -267,21 +265,20 @@
                         </td>
                         <td>{{ pessoa.nome }}</td>
                         <td>{{ pessoa.email }}</td>
-
                         {% if current_user.tipo == 'admin' %}
-                            <td> <p class="dono">Dono: {{ pessoa.dono_nome }} ({{ pessoa.dono_email }})</p></td>
+                            <td>{{ pessoa.tipo }}</td>
                         {% endif %}
-
                         <td>{{ pessoa.criado_em.strftime('%d/%m/%Y') if pessoa.criado_em else '' }}</td>
                         <td>
                             <div class="actions">
-                                <a href="{{ url_for('editar', email=pessoa.email) }}" class="action-btn edit">Editar</a>
-                                <form action="{{ url_for('excluir', email=pessoa.email) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');">
+                                <a href="{{ url_for('editar', id=pessoa.id) }}" class="action-btn edit">Editar</a>
+                                <form action="{{ url_for('excluir', id=pessoa.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="action-btn delete">Excluir</button>
                                 </form>
                             </div>
                         </td>
+
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -334,4 +331,3 @@
     </script>
 </body>
 </html>
-

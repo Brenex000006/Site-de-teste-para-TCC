@@ -52,6 +52,14 @@
         body.dark-mode input { background:#1a1a1a; color:#ddd; border:1px solid rgba(255,255,255,0.08); }
         body.dark-mode .btn { background:#363636; color:#fff; }
         body.dark-mode .btn:hover { background:#575757; color:#fff; }
+        .flash {
+            background: #ffdddd;
+            border: 1px solid #ff5f56;
+            color: #a30000;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
@@ -72,14 +80,23 @@
         <div class="form-container">
             <h1>Login</h1>
             <p class="subtitle">Faça login para continuar</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
             <form method="POST">
                 {{ form.hidden_tag() }}
 
                 <label for="email">E-mail</label>
-                {{ form.email(class="form-control", id="email") }}
+                {{ form.email(class="form-control", id="email", placeholder="Digite seu e-mail") }}
 
                 <label for="password">Senha</label>
-                {{ form.password(class="form-control", id="password") }}
+                {{ form.password(class="form-control", id="password", placeholder="Digite sua senha") }}
 
                 <a href="#" class="forgot-link">Esqueceu a senha?</a>
 

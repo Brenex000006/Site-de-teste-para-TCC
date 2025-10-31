@@ -31,7 +31,6 @@
             background: rgba(255,255,255,0.95);
             border-bottom: 1px solid rgba(0,0,0,0.06);
             z-index: 1000;
-            box-sizing: border-box;
         }
 
         .browser-dots { display: flex; gap: 8px; align-items: center; }
@@ -40,12 +39,7 @@
         .dot.yellow { background: #ffbd2e; }
         .dot.green { background: #27ca3f; }
 
-        .browser-controls {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
+        .browser-controls { display: flex; gap: 12px; align-items: center; }
         .mode-toggle {
             background: #111;
             color: #fff;
@@ -53,14 +47,10 @@
             padding: 6px 10px;
             border-radius: 6px;
             cursor: pointer;
-            display: flex;
-            gap: 8px;
-            align-items: center;
         }
-
         .logout-btn {
             background: #c0392b;
-            color: white;
+            color: #fff;
             border: none;
             padding: 6px 12px;
             border-radius: 6px;
@@ -85,6 +75,7 @@
             padding: 32px;
             border-radius: 16px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            text-align: left;
         }
 
         h1 {
@@ -110,12 +101,13 @@
             margin-bottom: 18px;
             font-size: 14px;
             background: #fff;
+            box-sizing: border-box;
         }
 
         img.current-image {
             display: block;
-            max-width: 150px;
-            margin-bottom: 12px;
+            max-width: 160px;
+            margin: 10px auto 16px;
             border-radius: 8px;
             border: 1px solid rgba(0,0,0,0.1);
         }
@@ -228,11 +220,17 @@
                 {{ form.email(id="email") }}
 
                 {% if pessoa.endereco_imagem %}
-                    <img src="{{ pessoa.endereco_imagem }}" alt="Imagem atual" class="current-image">
+                    {% set imagem_url = pessoa.endereco_imagem %}
+                    {% if not imagem_url.startswith('http') %}
+                        {% set imagem_url = url_for('static', filename=imagem_url) %}
+                    {% endif %}
+                    <img src="{{ imagem_url }}" alt="Imagem atual" class="current-image" id="currentImage">
                 {% endif %}
 
                 <label for="endereco_imagem">Nova imagem (opcional)</label>
                 {{ form.endereco_imagem(id="endereco_imagem") }}
+
+                <img id="previewImage" class="current-image" style="display:none;" alt="Pré-visualização">
 
                 <button type="submit" class="btn">Salvar Alterações</button>
             </form>
@@ -240,7 +238,6 @@
             <a href="{{ url_for('lista') }}" class="secondary-link">Voltar à lista</a>
         </div>
 
-        <!-- POPUPS SOMENTE DE EDIÇÃO -->
         {% with mensagens = get_flashed_messages(with_categories=True) %}
             {% if mensagens %}
                 {% for categoria, mensagem in mensagens %}
@@ -284,6 +281,22 @@
                 setTimeout(()=>{ p.style.opacity="0"; p.style.transform="translateY(-10px)"; },4000);
                 setTimeout(()=>{ p.remove(); },4600);
             });
+        });
+
+        // Pré-visualização da nova imagem
+        document.getElementById("endereco_imagem").addEventListener("change", function(e) {
+            const preview = document.getElementById("previewImage");
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    preview.src = evt.target.result;
+                    preview.style.display = "block";
+                    const current = document.getElementById("currentImage");
+                    if (current) current.style.display = "none";
+                };
+                reader.readAsDataURL(file);
+            }
         });
     </script>
 </body>
