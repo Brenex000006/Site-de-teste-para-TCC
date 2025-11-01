@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastrar Morador - Sistema</title>
+    <title>Cadastrar Usuário - Sistema</title>
     <style>
         html, body { height:100%; margin:0; padding:0; font-family:"Segoe UI", Roboto, Arial, sans-serif; }
         body {
@@ -11,7 +11,6 @@
             display:flex; flex-direction:column; color:#111;
         }
 
-        /* Barra superior */
         .browser-bar {
             position:fixed; top:0; left:0; right:0; height:56px;
             display:flex; justify-content:space-between; align-items:center;
@@ -27,13 +26,11 @@
         .browser-controls { display:flex; gap:12px; align-items:center; }
         .mode-toggle { background:#111; color:#fff; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; }
 
-        /* Conteúdo principal */
         .content {
             flex:1; display:flex; justify-content:center; align-items:center;
             padding:80px 20px 40px;
         }
 
-        /* Container do formulário */
         .form-container {
             width:100%; max-width:480px; background:white; padding:28px;
             border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08);
@@ -43,7 +40,7 @@
         .subtitle { margin-bottom:18px; color:#666; font-size:14px; text-align:center; }
 
         label { display:block; font-size:14px; margin-bottom:6px; font-weight:500; }
-        input[type="text"], input[type="email"], input[type="file"] {
+        input[type="text"], input[type="email"], input[type="password"], select, input[type="file"] {
             width:100%; padding:12px; border-radius:6px; border:1px solid rgba(0,0,0,0.12);
             margin-bottom:18px; font-size:14px; box-sizing:border-box;
         }
@@ -61,17 +58,15 @@
         }
         .secondary-link:hover { background:#2f4f4f; }
 
-        /* Tema escuro */
         body.dark-mode { background:#000; color:#fff; }
         body.dark-mode .browser-bar { background:rgba(16,16,16,0.95); }
         body.dark-mode .form-container { background:#111; color:#ddd; }
         body.dark-mode .btn { background:#363636; color:#ddd; }
         body.dark-mode .btn:hover { background:#696969; color:#ddd; }
-        body.dark-mode input { background:#1a1a1a; color:#ddd; border:1px solid rgba(255,255,255,0.08); }
+        body.dark-mode input, body.dark-mode select { background:#1a1a1a; color:#ddd; border:1px solid rgba(255,255,255,0.08); }
         body.dark-mode .secondary-link { background:#363636; color:#ddd; }
         body.dark-mode .secondary-link:hover { background:#696969; color:#ddd; }
 
-        /* Popups (mensagens flash) */
         .flash-message {
             position:fixed;
             top:70px;
@@ -79,21 +74,31 @@
             transform:translateX(-50%);
             width:90%;
             max-width:480px;
-            padding:14px;
-            border-radius:8px;
+            padding:12px;
+            border-radius:6px;
             text-align:center;
             font-weight:600;
             color:#fff;
             z-index:9999;
             display:none;
-            box-shadow:0 4px 10px rgba(0,0,0,0.15);
         }
         .flash-success { background-color:#28a745; border:1px solid #1e7e34; }
         .flash-danger { background-color:#dc3545; border:1px solid #b02a37; }
-        .flash-warning { background-color:#ffcc00; border:1px solid #d4aa00; color:#111; }
-        body.dark-mode .flash-success { background-color:#2ecc71; }
-        body.dark-mode .flash-danger { background-color:#e74c3c; }
-        body.dark-mode .flash-warning { background-color:#f1c40f; color:#000; }
+        .flash-warning { background-color:#ffc107; border:1px solid #e0a800; color:#111; }
+
+        /* preview da imagem */
+        #previewImagem {
+            display:none;
+            margin-top:-10px;
+            margin-bottom:16px;
+            text-align:center;
+        }
+        #previewImagem img {
+            max-width:150px;
+            border-radius:8px;
+            margin-top:6px;
+            box-shadow:0 2px 6px rgba(0,0,0,0.2);
+        }
     </style>
 </head>
 <body>
@@ -104,7 +109,7 @@
                 <div class="dot yellow"></div>
                 <div class="dot green"></div>
             </div>
-            <strong>Cadastro Facial</strong>
+            <strong>Cadastrar Usuário</strong>
         </div>
         <div class="browser-controls">
             <span id="modeText">MODO : DIA</span>
@@ -114,10 +119,9 @@
 
     <main class="content">
         <div class="form-container">
-            <h1>Cadastrar Morador</h1>
-            <p class="subtitle">Preencha os dados abaixo para adicionar um novo morador</p>
+            <h1>Cadastro de Usuário</h1>
+            <p class="subtitle">Preencha os dados abaixo para criar um novo usuário no sistema</p>
 
-            <!-- Popups exclusivos do cadastro -->
             {% with messages = get_flashed_messages(with_categories=true) %}
               {% if messages %}
                 {% for category, msg in messages %}
@@ -128,7 +132,7 @@
               {% endif %}
             {% endwith %}
 
-            <form method="POST" action="{{ url_for('cadastrar') }}" enctype="multipart/form-data">
+            <form method="POST" action="{{ url_for('cadastrar_usuario') }}" enctype="multipart/form-data">
                 {{ form.hidden_tag() }}
 
                 <label for="nome">Nome</label>
@@ -137,18 +141,64 @@
                 <label for="email">E-mail</label>
                 {{ form.email(class="form-control", id="email") }}
 
-                <label for="endereco_imagem">Imagem (opcional)</label>
-                {{ form.endereco_imagem(id="endereco_imagem") }}
+                <label for="senha">Senha</label>
+                {{ form.senha(class="form-control", id="senha") }}
 
-                <button type="submit" class="btn">Cadastrar</button>
+                <label for="tipo">Tipo de Usuário</label>
+                {{ form.tipo(class="form-control", id="tipo") }}
+
+                <!-- Campo de imagem visível apenas para tipo 'comum' -->
+                <div id="imagemSection" style="display:none;">
+                    <label for="endereco_imagem">Imagem (opcional)</label>
+                    {{ form.endereco_imagem(id="endereco_imagem") }}
+                    <div id="previewImagem">
+                        <p style="font-size:13px; color:#888;">Pré-visualização:</p>
+                        <img id="imgPreview" src="#" alt="Prévia da imagem">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn">Cadastrar Usuário</button>
             </form>
 
-            <a href="{{ url_for('lista') }}" class="secondary-link">Voltar para a lista</a>
+            <a href="{{ url_for('lista') }}" class="secondary-link">Voltar à Lista</a>
         </div>
     </main>
 
     <script>
-        // --- Tema Escuro/Claro ---
+        const tipoSelect = document.getElementById("tipo");
+        const imagemSection = document.getElementById("imagemSection");
+        const inputImagem = document.getElementById("endereco_imagem");
+        const previewDiv = document.getElementById("previewImagem");
+        const imgPreview = document.getElementById("imgPreview");
+
+        function atualizarCampoImagem() {
+            imagemSection.style.display = tipoSelect.value.toLowerCase() === "comum" ? "block" : "none";
+        }
+
+        if (tipoSelect) {
+            tipoSelect.addEventListener("change", atualizarCampoImagem);
+            atualizarCampoImagem(); // executa no carregamento
+        }
+
+        // Pré-visualização da imagem
+        if (inputImagem) {
+            inputImagem.addEventListener("change", function() {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        imgPreview.src = e.target.result;
+                        previewDiv.style.display = "block";
+                    }
+                    reader.readAsDataURL(file);
+                } else {
+                    previewDiv.style.display = "none";
+                    imgPreview.src = "#";
+                }
+            });
+        }
+
+        // Tema claro/escuro
         (function(){
             const modeText=document.getElementById("modeText");
             const themeToggle=document.getElementById("themeToggle");
@@ -172,7 +222,7 @@
             });
         })();
 
-        // --- Exibir popup (somente nesta página) ---
+        // Flash messages
         document.addEventListener("DOMContentLoaded",()=>{
             const flash=document.getElementById("flashMessage");
             if(flash){

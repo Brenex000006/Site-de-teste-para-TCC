@@ -3,141 +3,301 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editar - Sistema</title>
+    <title>Editar Morador</title>
     <style>
-        html, body { height:100%; margin:0; padding:0; font-family:"Segoe UI", Roboto, Arial, sans-serif; }
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
+        }
+
         body {
             background: linear-gradient(135deg, #e9f0fb 0%, #f6f8fb 100%);
-            display:flex; flex-direction:column; color:#111;
+            color: #111;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
 
         .browser-bar {
-            position:fixed; top:0; left:0; right:0;
-            height:56px; display:flex; justify-content:space-between; align-items:center;
-            padding:0 20px; background:rgba(255,255,255,0.95);
-            border-bottom:1px solid rgba(0,0,0,0.06); z-index:1000;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            background: rgba(255,255,255,0.95);
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            z-index: 1000;
         }
-        .browser-dots { display:flex; gap:8px; }
-        .dot { width:12px; height:12px; border-radius:50%; }
-        .dot.red { background:#ff5f56; }
-        .dot.yellow { background:#ffbd2e; }
-        .dot.green { background:#27ca3f; }
 
-        .browser-controls { display:flex; gap:12px; align-items:center; }
-        .mode-toggle { background:#111; color:#fff; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; }
+        .browser-dots { display: flex; gap: 8px; align-items: center; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .dot.red { background: #ff5f56; }
+        .dot.yellow { background: #ffbd2e; }
+        .dot.green { background: #27ca3f; }
 
-        .content {
-            flex:1; display:flex; justify-content:center; align-items:center;
-            padding:80px 20px 40px;
+        .browser-controls { display: flex; gap: 12px; align-items: center; }
+        .mode-toggle {
+            background: #111;
+            color: #fff;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .logout-btn {
+            background: #c0392b;
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 13px;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-top: 80px;
+            padding-bottom: 40px;
         }
 
         .form-container {
-            width:100%; max-width:480px; background:white; padding:28px;
-            border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); text-align:left;
+            width: 100%;
+            max-width: 480px;
+            background: #fff;
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            text-align: left;
         }
 
-        h1 { margin-bottom:8px; font-size:28px; font-weight:600; text-align:center; }
-        .subtitle { margin-bottom:18px; color:#666; font-size:14px; text-align:center; }
-
-        label { display:block; text-align:left; font-size:14px; margin-bottom:6px; font-weight:500; }
-        input[type="text"], input[type="email"], input[type="file"] {
-            width:100%; padding:12px; border-radius:6px; border:1px solid rgba(0,0,0,0.12);
-            margin-bottom:18px; font-size:14px; box-sizing:border-box;
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: 600;
+            font-size: 26px;
         }
 
-        .btn {
-            width:100%; padding:12px; background:#111; color:#fff;
-            border:none; border-radius:6px; font-weight:600; cursor:pointer;
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
         }
 
-        .secondary-link {
-            display:block;
-            margin-top:12px;
-            text-align:center;
-            text-decoration:none;
-            font-size:14px;
-            color:#666;
-            padding:10px;
+        input[type="text"],
+        input[type="email"],
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(0,0,0,0.12);
+            border-radius: 6px;
+            margin-bottom: 18px;
+            font-size: 14px;
+            background: #fff;
+            box-sizing: border-box;
         }
 
         img.current-image {
-            display:block;
-            max-width:150px;
-            margin-bottom:12px;
-            border-radius:8px;
-            border:1px solid rgba(0,0,0,0.06);
+            display: block;
+            max-width: 160px;
+            margin: 10px auto 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: #111;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .btn:hover { background: #333; }
+
+        .secondary-link {
+            display: block;
+            text-align: center;
+            text-decoration: none;
+            margin-top: 14px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* POPUPS */
+        .popup {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 14px 18px;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 600;
+            animation: fadeOut 4s forwards;
+            box-shadow: 0px 4px 8px rgba(0,0,0,0.3);
+            z-index: 2000;
+        }
+
+        .editar_success { background-color: #2ecc71; }
+        .editar_danger { background-color: #e74c3c; }
+        .editar_info { background-color: #3498db; }
+        .editar_warning { background-color: #f39c12; }
+
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; display: none; }
         }
 
         /* Dark mode */
-        body.dark-mode { background:#000; color:#fff; }
-        body.dark-mode .browser-bar { background:rgba(16,16,16,0.95); }
-        body.dark-mode .form-container { background:#111; color:#ddd; }
-        body.dark-mode input { background:#1a1a1a; color:#ddd; border:1px solid rgba(255,255,255,0.08); }
+        body.dark-mode {
+            background: #000;
+            color: #fff;
+        }
+
+        body.dark-mode .browser-bar {
+            background: rgba(16,16,16,0.95);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        body.dark-mode .form-container {
+            background: #111;
+            box-shadow: 0 2px 8px rgba(255,255,255,0.05);
+        }
+
+        body.dark-mode input[type="text"],
+        body.dark-mode input[type="email"],
+        body.dark-mode input[type="file"] {
+            background: #1a1a1a;
+            color: #eee;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        body.dark-mode label { color: #ddd; }
+        body.dark-mode h1 { color: #fff; }
+        body.dark-mode .secondary-link { color: #aaa; }
+        body.dark-mode .btn { background: #f1c40f; color: #111; }
     </style>
 </head>
 <body>
     <div class="browser-bar">
         <div style="display:flex; align-items:center; gap:12px;">
-            <div class="browser-dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div>
-            <strong>Cadastro Facial</strong>
+            <div class="browser-dots">
+                <div class="dot red"></div>
+                <div class="dot yellow"></div>
+                <div class="dot green"></div>
+            </div>
+            <div style="font-weight:600;">Cadastro Facial</div>
         </div>
         <div class="browser-controls">
-            <span id="modeText">MODO : DIA</span>
+            <span id="modeText">MODO - DIA</span>
             <button id="themeToggle" class="mode-toggle">🌙</button>
+            <a href="{{ url_for('logout') }}" class="logout-btn">SAIR</a>
         </div>
     </div>
 
-    <main class="content">
+    <main>
         <div class="form-container">
-            <h1>Editar Usuário</h1>
-            <p class="subtitle">Atualize os dados do usuário</p>
-
+            <h1>Editar Morador</h1>
             <form method="POST" enctype="multipart/form-data">
                 {{ form.hidden_tag() }}
 
                 <label for="nome">Nome</label>
-                {{ form.nome(class="form-control", id="nome") }}
+                {{ form.nome(id="nome") }}
 
                 <label for="email">E-mail</label>
-                {{ form.email(class="form-control", id="email") }}
+                {{ form.email(id="email") }}
 
                 {% if pessoa.endereco_imagem %}
-                    <img src="{{ pessoa.endereco_imagem }}" alt="Imagem atual" class="current-image">
+                    {% set imagem_url = pessoa.endereco_imagem %}
+                    {% if not imagem_url.startswith('http') %}
+                        {% set imagem_url = url_for('static', filename=imagem_url) %}
+                    {% endif %}
+                    <img src="{{ imagem_url }}" alt="Imagem atual" class="current-image" id="currentImage">
                 {% endif %}
 
                 <label for="endereco_imagem">Nova imagem (opcional)</label>
                 {{ form.endereco_imagem(id="endereco_imagem") }}
 
+                <img id="previewImage" class="current-image" style="display:none;" alt="Pré-visualização">
+
                 <button type="submit" class="btn">Salvar Alterações</button>
             </form>
 
-            <a href="{{ url_for('lista') }}" class="secondary-link">Voltar para a lista</a>
+            <a href="{{ url_for('lista') }}" class="secondary-link">Voltar à lista</a>
         </div>
+
+        {% with mensagens = get_flashed_messages(with_categories=True) %}
+            {% if mensagens %}
+                {% for categoria, mensagem in mensagens %}
+                    {% if categoria.startswith('editar_') %}
+                        <div class="popup {{ categoria }}">{{ mensagem }}</div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
     </main>
 
     <script>
+        // Tema claro/escuro
         (function(){
-            const modeText=document.getElementById("modeText");
-            const themeToggle=document.getElementById("themeToggle");
+            const modeText=document.getElementById('modeText');
+            const themeToggle=document.getElementById('themeToggle');
             function applyTheme(theme){
-                if(theme==="dark"){
-                    document.body.classList.add("dark-mode");
-                    modeText.textContent="MODO : NOITE";
-                    themeToggle.textContent="☀️";
+                if(theme==='dark'){
+                    document.body.classList.add('dark-mode');
+                    modeText.textContent='MODO : NOITE';
+                    themeToggle.textContent='☀️';
                 } else {
-                    document.body.classList.remove("dark-mode");
-                    modeText.textContent="MODO : DIA";
-                    themeToggle.textContent="🌙";
+                    document.body.classList.remove('dark-mode');
+                    modeText.textContent='MODO : DIA';
+                    themeToggle.textContent='🌙';
                 }
             }
-            const saved=localStorage.getItem("site-theme")||"light";
+            const saved=localStorage.getItem('site-theme')||'light';
             applyTheme(saved);
-            themeToggle.addEventListener("click",()=>{
-                const next=document.body.classList.contains("dark-mode")?"light":"dark";
+            themeToggle.addEventListener('click',()=>{
+                const next=document.body.classList.contains('dark-mode')?'light':'dark';
                 applyTheme(next);
-                localStorage.setItem("site-theme",next);
+                localStorage.setItem('site-theme',next);
             });
         })();
+
+        // Popup desaparecendo automaticamente
+        document.addEventListener("DOMContentLoaded",()=>{
+            const popups=document.querySelectorAll(".popup");
+            popups.forEach(p=>{
+                setTimeout(()=>{ p.style.opacity="0"; p.style.transform="translateY(-10px)"; },4000);
+                setTimeout(()=>{ p.remove(); },4600);
+            });
+        });
+
+        // Pré-visualização da nova imagem
+        document.getElementById("endereco_imagem").addEventListener("change", function(e) {
+            const preview = document.getElementById("previewImage");
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    preview.src = evt.target.result;
+                    preview.style.display = "block";
+                    const current = document.getElementById("currentImage");
+                    if (current) current.style.display = "none";
+                };
+                reader.readAsDataURL(file);
+            }
+        });
     </script>
 </body>
 </html>

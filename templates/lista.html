@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Moradores Cadastrados</title>
+    <title>Usuários Cadastrados</title>
     <style>
         html, body {
             height: 100%;
@@ -120,21 +120,10 @@
             font-size:14px;
         }
 
-        .btn-success {
-            background:#27ae60;
-            color:white;
-        }
-
-        .btn-primary {
-            background:#2980b9;
-            color:white;
-            height:40px;
-        }
-
-        .btn-secondary {
-            background:#7f8c8d;
-            color:white;
-        }
+        .btn-success { background:#27ae60; color:white; }
+        .btn-primary { background:#2980b9; color:white; height:40px; }
+        .btn-secondary { background:#7f8c8d; color:white; }
+        .btn-admin { background:#8e44ad; color:white; }
 
         .table-wrapper {
             width: 100%;
@@ -164,127 +153,102 @@
             text-align: left;
         }
 
-        tbody tr:nth-child(even) {
-            background: rgba(0,0,0,0.02);
-        }
+        tbody tr:nth-child(even) { background: rgba(0,0,0,0.02); }
 
         img.img-thumbnail {
             border-radius:6px;
             display:block;
         }
 
-        .actions {
-            display:flex;
-            gap:8px;
-            align-items:center;
-        }
+        .actions { display:flex; gap:8px; align-items:center; }
+        .action-btn { padding:6px 10px; border-radius:6px; border:none; cursor:pointer; font-size:13px; height:36px; }
+        .action-btn.edit { width:35px; height:23px; background:#f1c40f; color:#111; }
+        .action-btn.delete { background:#e74c3c; color:#fff; }
 
-        .action-btn {
-            padding:6px 10px;
-            border-radius:6px;
-            border:none;
-            cursor:pointer;
-            font-size:13px;
-            height:36px;
+        body.dark-mode { background: #000; color: #fff; }
+        body.dark-mode button { background:#363636; color:#ddd; }
+        body.dark-mode .browser-bar { background: rgba(16,16,16,0.95); border-bottom:1px solid rgba(255,255,255,0.05); }
+        body.dark-mode .search-container input[type="text"], body.dark-mode .search-container input[type="date"] {
+            background: #111; color: #ddd; border:1px solid rgba(255,255,255,0.06);
         }
-
-        .action-btn.edit {
-            width:35px;
-            height:23px;
-            background:#f1c40f;
-            color:#111;
-        }
-
-        .action-btn.delete {
-            background:#e74c3c;
-            color:#fff;
-        }
-
-        body.dark-mode {
-            background: #000;
-            color: #fff;
-        }
-
-        body.dark-mode button {
-            background:#363636;
-            color:#ddd;
-        }
-
-        body.dark-mode .browser-bar {
-            background: rgba(16,16,16,0.95);
-            border-bottom:1px solid rgba(255,255,255,0.05);
-        }
-
-        body.dark-mode .search-container input[type="text"],
-        body.dark-mode .search-container input[type="date"] {
-            background: #111;
-            color: #ddd;
-            border:1px solid rgba(255,255,255,0.06);
-        }
-
-        body.dark-mode thead th {
-            background: #0b0b0b;
-            color: #fff;
-        }
-
-        body.dark-mode th, body.dark-mode td {
-            border-color: rgba(255,255,255,0.06);
-        }
-
-        body.dark-mode tbody tr:nth-child(even) {
-            background: rgba(255,255,255,0.02);
-        }
-
-        body.dark-mode table {
-            background: #111;
-        }
+        body.dark-mode thead th { background: #0b0b0b; color: #fff; }
+        body.dark-mode th, body.dark-mode td { border-color: rgba(255,255,255,0.06); }
+        body.dark-mode tbody tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+        body.dark-mode table { background: #111; }
 
         @media (max-width: 900px) {
             h2 { font-size: 24px; }
             .search-container { gap:8px; }
-            .search-container input[type="text"],
-            .search-container input[type="date"] { min-width: 130px; }
+            .search-container input[type="text"], .search-container input[type="date"] { min-width: 130px; }
+        }
+
+        /* POPUPS */
+        .popup {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 14px 18px;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 600;
+            animation: fadeOut 4s forwards;
+            box-shadow: 0px 4px 8px rgba(0,0,0,0.3);
+            z-index: 2000;
+        }
+
+        .lista_success { background-color: #2ecc71; }
+        .lista_danger { background-color: #e74c3c; }
+        .lista_info { background-color: #3498db; }
+        .lista_warning { background-color: #f39c12; }
+
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; display: none; }
         }
     </style>
 </head>
 <body>
-    <div class="browser-bar" role="banner">
+    <div class="browser-bar">
         <div style="display:flex; align-items:center; gap:12px;">
-            <div class="browser-dots" aria-hidden="true">
+            <div class="browser-dots">
                 <div class="dot red"></div>
                 <div class="dot yellow"></div>
                 <div class="dot green"></div>
             </div>
-            <div style="font-weight:600; color:inherit;">Cadastro Facial</div>
+            <div style="font-weight:600;">Cadastro Facial</div>
         </div>
-
-        <div class="browser-controls" role="navigation">
+        <div class="browser-controls">
             <span id="modeText">MODO - DIA</span>
-            <button id="themeToggle" class="mode-toggle" aria-label="Alternar tema">🌙</button>
+            <button id="themeToggle" class="mode-toggle">🌙</button>
             <a href="{{ url_for('logout') }}" class="logout-btn">SAIR</a>
         </div>
     </div>
 
-    <main class="content" role="main">
-        <h2>Moradores Cadastrados</h2>
+    <main class="content">
+        <h2>Usuários Cadastrados</h2>
 
-        <form method="GET" class="search-container" role="search">
-            <a href="{{ url_for('cadastrar') }}" class="btn btn-success">Novo Cadastro</a>
+        <form method="GET" class="search-container">
+            {% if current_user.tipo == 'admin' %}
+                <a href="{{ url_for('cadastrar_usuario') }}" class="btn btn-admin">Cadastrar Usuário</a>
+            {% endif %}
 
             <input type="text" name="filtro" placeholder="Nome ou E-mail" value="{{ filtro }}">
             <input type="date" name="data" value="{{ data }}">
-
             <button type="submit" class="btn btn-primary">Filtrar</button>
             <a href="{{ url_for('lista') }}" class="btn btn-secondary">Limpar</a>
         </form>
 
-        <div class="table-wrapper" aria-live="polite">
+        <div class="table-wrapper">
             <table>
                 <thead>
                     <tr>
                         <th>Imagem</th>
                         <th>Nome</th>
                         <th>E-mail</th>
+                        {% if current_user.tipo == 'admin' %}
+                            <th>Tipo</th>
+                        {% endif %}
                         <th>Data de Cadastro</th>
                         <th>Ações</th>
                     </tr>
@@ -301,51 +265,69 @@
                         </td>
                         <td>{{ pessoa.nome }}</td>
                         <td>{{ pessoa.email }}</td>
+                        {% if current_user.tipo == 'admin' %}
+                            <td>{{ pessoa.tipo }}</td>
+                        {% endif %}
                         <td>{{ pessoa.criado_em.strftime('%d/%m/%Y') if pessoa.criado_em else '' }}</td>
                         <td>
                             <div class="actions">
-                                <a href="{{ url_for('editar', email=pessoa.email) }}" class="action-btn edit" title="Editar">Editar</a>
-
-                                <form action="{{ url_for('excluir', email=pessoa.email) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');">
+                                <a href="{{ url_for('editar', id=pessoa.id) }}" class="action-btn edit">Editar</a>
+                                <form action="{{ url_for('excluir', id=pessoa.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="action-btn delete">Excluir</button>
                                 </form>
                             </div>
                         </td>
+
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+
+        <!-- POPUPS SOMENTE DA LISTA -->
+        {% with mensagens = get_flashed_messages(with_categories=True) %}
+            {% if mensagens %}
+                {% for categoria, mensagem in mensagens %}
+                    {% if categoria.startswith('lista_') %}
+                        <div class="popup {{ categoria }}">{{ mensagem }}</div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
     </main>
 
     <script>
-        (function () {
-            const modeText = document.getElementById('modeText');
-            const themeToggle = document.getElementById('themeToggle');
-
-            function applyTheme(theme) {
-                if (theme === 'dark') {
+        (function(){
+            const modeText=document.getElementById('modeText');
+            const themeToggle=document.getElementById('themeToggle');
+            function applyTheme(theme){
+                if(theme==='dark'){
                     document.body.classList.add('dark-mode');
-                    modeText.textContent = 'MODO : NOITE';
-                    themeToggle.textContent = '☀️';
+                    modeText.textContent='MODO : NOITE';
+                    themeToggle.textContent='☀️';
                 } else {
                     document.body.classList.remove('dark-mode');
-                    modeText.textContent = 'MODO : DIA';
-                    themeToggle.textContent = '🌙';
+                    modeText.textContent='MODO : DIA';
+                    themeToggle.textContent='🌙';
                 }
             }
-
-            const saved = localStorage.getItem('site-theme') || 'dark';
+            const saved=localStorage.getItem('site-theme')||'light';
             applyTheme(saved);
-
-            themeToggle.addEventListener('click', function () {
-                const isDark = document.body.classList.contains('dark-mode');
-                const next = isDark ? 'light' : 'dark';
+            themeToggle.addEventListener('click',()=>{
+                const next=document.body.classList.contains('dark-mode')?'light':'dark';
                 applyTheme(next);
-                localStorage.setItem('site-theme', next);
+                localStorage.setItem('site-theme',next);
             });
         })();
+
+        document.addEventListener("DOMContentLoaded",()=>{
+            const popups=document.querySelectorAll(".popup");
+            popups.forEach(p=>{
+                setTimeout(()=>{ p.style.opacity="0"; p.style.transform="translateY(-10px)"; },4000);
+                setTimeout(()=>{ p.remove(); },4600);
+            });
+        });
     </script>
 </body>
 </html>

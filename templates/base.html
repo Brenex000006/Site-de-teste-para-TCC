@@ -3,71 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Sistema{% endblock %}</title>
+    <title>{% block title %}Sistema de Reconhecimento Facial{% endblock %}</title>
     <style>
-        html, body { height:100%; margin:0; padding:0; font-family:"Segoe UI", Roboto, Arial, sans-serif; }
-        body {
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
             background: linear-gradient(135deg, #e9f0fb 0%, #f6f8fb 100%);
-            display:flex; flex-direction:column; color:#111;
+            color: #111;
         }
 
-        /* Barra superior estilo navegador */
         .browser-bar {
-            position:fixed; top:0; left:0; right:0;
-            height:56px; display:flex; justify-content:space-between; align-items:center;
-            padding:0 20px; background:rgba(255,255,255,0.95);
-            border-bottom:1px solid rgba(0,0,0,0.06); z-index:1000;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 56px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            z-index: 1000;
         }
-        .browser-dots { display:flex; gap:8px; }
-        .dot { width:12px; height:12px; border-radius:50%; }
-        .dot.red { background:#ff5f56; }
-        .dot.yellow { background:#ffbd2e; }
-        .dot.green { background:#27ca3f; }
 
-        .browser-controls { display:flex; gap:12px; align-items:center; }
-        .mode-toggle { background:#111; color:#fff; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; }
+        .browser-dots {
+            display: flex;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 12px; height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot.red { background: #ff5f56; }
+        .dot.yellow { background: #ffbd2e; }
+        .dot.green { background: #27ca3f; }
+
+        .browser-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .mode-toggle {
+            background: #111;
+            color: #fff;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
         .logout-btn {
-            background:#f44336; color:#fff; border:none;
-            padding:6px 12px; border-radius:6px; cursor:pointer;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-weight: 600;
         }
 
-        /* Conteúdo central */
+        .logout-btn:hover { background: #c0392b; }
+
         .content {
-            flex:1; display:flex; justify-content:center; align-items:center;
-            padding:80px 20px 40px;
+            padding-top: 70px;
+            padding-bottom: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        .form-container, .page-container {
-            width:100%; max-width:800px; background:white; padding:28px;
-            border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08);
-        }
-        .form-container { max-width:400px; text-align:center; }
 
-        h1, h2 { margin-bottom:16px; font-weight:600; }
-        .subtitle { margin-bottom:28px; color:#666; font-size:14px; }
-
-        label { display:block; text-align:left; font-size:14px; margin-bottom:6px; font-weight:500; }
-        input, select {
-            width:100%; padding:12px; border-radius:6px; border:1px solid rgba(0,0,0,0.12);
-            margin-bottom:18px; font-size:14px;
+        /* Tema escuro */
+        body.dark-mode {
+            background: #000;
+            color: #fff;
         }
-        .btn {
-            padding:10px 18px; border:none; border-radius:6px;
-            font-weight:600; cursor:pointer;
+        body.dark-mode .browser-bar {
+            background: rgba(16, 16, 16, 0.95);
         }
-        .btn-primary { background:#111; color:#fff; }
-        .btn-secondary { background:#ccc; color:#111; }
-
-        /* Dark mode */
-        body.dark-mode { background:#000; color:#fff; }
-        body.dark-mode .browser-bar { background:rgba(16,16,16,0.95); }
-        body.dark-mode .form-container, body.dark-mode .page-container { background:#111; color:#ddd; }
-        body.dark-mode input, body.dark-mode select { background:#1a1a1a; color:#ddd; border:1px solid rgba(255,255,255,0.08); }
-        body.dark-mode .btn-primary { background:#fff; color:#111; }
-        body.dark-mode .btn-secondary { background:#444; color:#ddd; }
+        body.dark-mode .mode-toggle {
+            background: #363636;
+        }
     </style>
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Barra superior -->
     <div class="browser-bar">
         <div style="display:flex; align-items:center; gap:12px;">
             <div class="browser-dots">
@@ -80,32 +102,42 @@
         <div class="browser-controls">
             <span id="modeText">MODO : DIA</span>
             <button id="themeToggle" class="mode-toggle">🌙</button>
-            {% if session.get("usuario") %}
-            <form action="{{ url_for('logout') }}" method="post" style="margin:0;">
-                <button type="submit" class="logout-btn">SAIR</button>
-            </form>
+            {% if current_user.is_authenticated %}
+                <form action="{{ url_for('logout') }}" method="post" style="display:inline;">
+                    <button type="submit" class="logout-btn">Sair</button>
+                </form>
             {% endif %}
         </div>
     </div>
 
-    <!-- Conteúdo -->
     <main class="content">
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Script de tema -->
     <script>
         (function(){
             const modeText=document.getElementById("modeText");
             const themeToggle=document.getElementById("themeToggle");
             function applyTheme(theme){
-                if(theme==="dark"){document.body.classList.add("dark-mode");modeText.textContent="MODO : NOITE";themeToggle.textContent="☀️";}
-                else{document.body.classList.remove("dark-mode");modeText.textContent="MODO : DIA";themeToggle.textContent="🌙";}
+                if(theme==="dark"){
+                    document.body.classList.add("dark-mode");
+                    modeText.textContent="MODO : NOITE";
+                    themeToggle.textContent="☀️";
+                } else {
+                    document.body.classList.remove("dark-mode");
+                    modeText.textContent="MODO : DIA";
+                    themeToggle.textContent="🌙";
+                }
             }
             const saved=localStorage.getItem("site-theme")||"light";
             applyTheme(saved);
-            themeToggle.addEventListener("click",()=>{const next=document.body.classList.contains("dark-mode")?"light":"dark";applyTheme(next);localStorage.setItem("site-theme",next);});
+            themeToggle.addEventListener("click",()=>{
+                const next=document.body.classList.contains("dark-mode")?"light":"dark";
+                applyTheme(next);
+                localStorage.setItem("site-theme",next);
+            });
         })();
     </script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>
