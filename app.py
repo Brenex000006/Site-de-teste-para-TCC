@@ -336,8 +336,10 @@ def editar(id):
             novo_endereco = os.path.abspath(caminho_arquivo)
 
             try:
-                from utils import enviar_backup_s3
-                threading.Thread(target=enviar_backup_s3, args=(caminho_arquivo,)).start()
+                if conectado_internet():
+                    threading.Thread(target=enviar_backup_s3, args=(caminho_arquivo,)).start()
+                else:
+                    print("Sem Conexão, cadastre novamente o usuário mais tarde para ter o backup da foto!")
             except ImportError:
                 print("[AVISO] enviar_backup_s3 não encontrado em utils.py. Upload local apenas.")
 
