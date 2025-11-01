@@ -112,6 +112,18 @@
             border: 1px solid rgba(0,0,0,0.1);
         }
 
+        .imagem-preview {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .imagem-preview img {
+            max-width: 150px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+
         .btn {
             width: 100%;
             padding: 12px;
@@ -220,12 +232,12 @@
                 {{ form.email(id="email") }}
 
                 {% if pessoa.endereco_imagem %}
-                    {% set imagem_url = pessoa.endereco_imagem %}
-                    {% if not imagem_url.startswith('http') %}
-                        {% set imagem_url = url_for('static', filename=imagem_url) %}
-                    {% endif %}
-                    <img src="{{ imagem_url }}" alt="Imagem atual" class="current-image" id="currentImage">
+                    <div class="imagem-preview">
+                        <img src="{{ pessoa.endereco_imagem }}" alt="Imagem do morador">
+                    </div>
+
                 {% endif %}
+
 
                 <label for="endereco_imagem">Nova imagem (opcional)</label>
                 {{ form.endereco_imagem(id="endereco_imagem") }}

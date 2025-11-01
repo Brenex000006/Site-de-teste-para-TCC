@@ -26,6 +26,14 @@ def pegar_config(tipo_config: str) -> any:
             configs = config["lambda"]["LAMBDA_URL"]
     return configs
 
+def caminho_imagem_relativo(img_path):
+    if not img_path:
+        return None
+    path_unix = img_path.replace("\\", "/")
+    if "/static/" in path_unix:
+        return "/static/" + path_unix.split("/static/")[-1]
+    return f"/static/uploads/{os.path.basename(path_unix)}"
+
 def encryptar_mensagem(mensagem: str) -> str:
     """
     Criptografa uma mensagem de string usando uma chave pública RSA.
