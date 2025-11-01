@@ -1,4 +1,3 @@
-import io
 import os
 import threading
 import uuid
@@ -10,13 +9,8 @@ from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 # Flask-WTF e CSRF
-from flask_wtf import FlaskForm, CSRFProtect
-from flask_wtf.csrf import generate_csrf
-from flask_wtf.file import FileField, FileAllowed
 from werkzeug.utils import secure_filename
 from wtforms import StringField, PasswordField, SubmitField, SelectField
-from wtforms.validators import DataRequired, Email
-from datetime import datetime
 
 # Flask-WTF e CSRF
 from flask_wtf import FlaskForm, CSRFProtect
@@ -79,7 +73,7 @@ def salvar_usuario(email, nome, imagem_url):
 # ---------------- BANCO DE DADOS ----------------
 db = mysql.connector.connect(
     host=os.getenv('DB_HOST', "127.0.0.1"),
-    user=os.getenv('DB_USER', "Root"),
+    user=os.getenv('DB_USER', "root"),
     password=os.getenv('DB_PASSWORD', "root"),
     database=os.getenv('DB_NAME', "tcc_reconhece")
 )
@@ -87,15 +81,6 @@ db = mysql.connector.connect(
 def ensure_db_connected():
     global db
     try:
-        cursor.execute(
-            "INSERT INTO usuarios (email, nome, endereco_imagem) VALUES (%s, %s, %s)",
-            (email, nome, imagem_url)
-        )
-        db.commit()
-        return True
-    except mysql.connector.errors.IntegrityError as e:
-        print("Erro ao inserir email:", e)
-        return False
         if not db.is_connected():
             db.reconnect(attempts=3, delay=2)
     except Exception:
@@ -246,7 +231,6 @@ def cadastrar_usuario():
             url_imagem = os.path.abspath(caminho_arquivo)
 
             try:
-                from utils import enviar_backup_s3
                 if conectado_internet():
                     threading.Thread(target=enviar_backup_s3, args=(caminho_arquivo,)).start()
                 else:
