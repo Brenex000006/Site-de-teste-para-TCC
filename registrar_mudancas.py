@@ -4,6 +4,7 @@ import threading
 import time
 
 from lambda_utils.Lambda_wrapper import enviar_request_lambda
+from utils import conectado_internet
 
 change_buffer = {
     "cadUsuario" : "cad_teste",
@@ -36,7 +37,10 @@ def debounce_worker():
             if now - last_update_time >= DEBOUNCE_SECONDS and not buffer_esta_vazio():
                 if not buffer_esta_vazio():
                     print(change_buffer)
-                    enviar_request_lambda(change_buffer)
+                    if conectado_internet():
+                        enviar_request_lambda(change_buffer)
+                    else:
+                        print("Sem conexão, backup vai tentar novamente em alguns segundos...")
 
 def registrar_alteracao_buffer(tipo, acao, valor):
     global last_update_time

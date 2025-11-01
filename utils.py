@@ -4,6 +4,7 @@ from pathlib import Path
 import yaml
 import base64
 import boto3
+import psutil
 import cryptography
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -120,3 +121,14 @@ def insert_into_s3(lista_configs, file, nome_user):
             ContentType="image/jpeg"
         )
         print("Inserido no S3")
+
+def conectado_internet() -> bool:
+    """
+    Faz um check se o sistema esta conectado a internet.
+    """
+    stats = psutil.net_if_stats()
+    for name, iface in stats.items():
+        if iface.isup and not name.lower().startswith("lo"):  # ignore loopback
+            if "eth" in name.lower() or "en" in name.lower() or "ethernet" in name.lower():
+                return True
+    return False

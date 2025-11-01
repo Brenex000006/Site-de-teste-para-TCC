@@ -19,7 +19,7 @@ from wtforms.validators import DataRequired, Email
 from flask_wtf.file import FileField, FileAllowed
 
 from registrar_mudancas import carregar_buffer, debounce_worker, registrar_alteracao_buffer
-from utils import pegar_config, enviar_backup_s3
+from utils import pegar_config, enviar_backup_s3, conectado_internet
 
 # Configuração
 load_dotenv()
@@ -246,7 +246,10 @@ def cadastrar():
             flash("Pessoa cadastrada com sucesso!", "success")
             #registrar_alteracao_buffer("usuarios", "adicionar", nome)
             if url_imagem:
-                enviar_backup_s3(f'uploads/{nome_unico}', nome)
+                if conectado_internet():
+                    enviar_backup_s3(f'uploads/{nome_unico}', nome)
+                else:
+                    print("Sem Conexão, cadastre novamente o usuário mais tarde para ter o backup da foto!")
             return redirect(url_for('lista'))
         else:
             flash("Erro ao cadastrar pessoa.", "danger")

@@ -7,3 +7,4 @@ pyotp
 qrcode
 requests
 boto3
+psutil~=7.1.0
