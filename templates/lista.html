@@ -266,7 +266,10 @@
                         <td>{{ pessoa.nome }}</td>
                         <td>{{ pessoa.email }}</td>
                         {% if current_user.tipo == 'admin' %}
-                            <td>{{ pessoa.tipo }}</td>
+                            <td>
+                                {{ 'Admin' if pessoa.tipo.lower() == 'admin' else 'Morador' }}
+                            </td>
+
                         {% endif %}
                         <td>{{ pessoa.criado_em.strftime('%d/%m/%Y') if pessoa.criado_em else '' }}</td>
                         <td>
