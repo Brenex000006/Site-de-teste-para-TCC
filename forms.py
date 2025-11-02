@@ -12,7 +12,7 @@ class UsuarioForm(FlaskForm):
     nome = StringField("Nome", validators=[DataRequired()])
     email = StringField("E-mail", validators=[DataRequired(), Email()])
     senha = PasswordField("Senha", validators=[DataRequired()])
-    tipo = SelectField("Tipo", choices=[("admin", "Admin"), ("comum", "Comum")], validators=[DataRequired()])
+    tipo = SelectField("Tipo", choices=[("admin", "Admin"), ("comum", "Morador")], validators=[DataRequired()])
     endereco_imagem = FileField("Imagem", validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Apenas imagens!')])
     submit = SubmitField("Salvar")
 
