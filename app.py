@@ -1,17 +1,21 @@
 import os
 import threading
 import uuid
+import resend
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, abort
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_wtf import CSRFProtect
 from flask_wtf.csrf import generate_csrf
 from werkzeug.utils import secure_filename
+from itsdangerous import URLSafeTimedSerializer
+from flask import render_template, request, flash, redirect, url_for
+from werkzeug.security import generate_password_hash
 
 # imports locais
 from db_connector import (
     get_usuario_by_id, get_usuario_by_email,
-    insert_usuario, update_usuario, delete_usuario, list_usuarios
+    insert_usuario, update_usuario, delete_usuario, list_usuarios, validar_token, atualizar_senha, salvar_token_reset
 )
 from forms import LoginForm, UsuarioForm, EditarForm
 from utils import pegar_config, enviar_backup_s3, conectado_internet, caminho_imagem_relativo
@@ -209,6 +213,94 @@ def excluir(id):
     if usuario:
         flash("Usuário excluído com sucesso!", "success_lista")
     return redirect(url_for('lista'))
+
+@app.route("/importar_bd")
+@login_required
+def importar_bd():
+    if current_user.tipo != "admin":
+        abort(403)
+    # lógica aqui
+    return redirect(url_for("lista"))
+
+@app.route("/exportar_bd")
+@login_required
+def exportar_bd():
+    if current_user.tipo != "admin":
+        abort(403)
+    # lógica aqui
+    return redirect(url_for("lista"))
+
+@app.route("/resetar_senha/<token>", methods=["GET", "POST"])
+def resetar_senha(token):
+    usuario = validar_token(token)  # agora vem do db_connector
+
+    if not usuario:
+        return "<h1>Link expirado ou inválido.</h1>"
+
+    if request.method == "POST":
+        nova_senha = request.form.get("senha")
+        hash_senha = generate_password_hash(nova_senha)
+
+        atualizar_senha(usuario["email"], hash_senha)  # também no db_connector
+
+        flash("Senha redefinida com sucesso!", "success")
+        return redirect(url_for("login"))
+
+    return render_template("resetar_senha.html")
+
+def gerar_token(email):
+    s = URLSafeTimedSerializer(app.secret_key)
+    return s.dumps(email, salt="recuperar-senha")
+
+def validar_token(token, max_age=3600):
+    s = URLSafeTimedSerializer(app.secret_key)
+    try:
+        email = s.loads(token, salt="recuperar-senha", max_age=max_age)
+        return email
+    except:
+        return None
+
+@app.route("/esqueci_senha", methods=["GET", "POST"])
+def esqueci_senha():
+    if request.method == "POST":
+        email = request.form.get("email")
+
+        # 1) Verifica se o email existe no banco (db_connector)
+        usuario = get_usuario_by_email(email)
+
+        if not usuario:
+            flash("E-mail não encontrado.", "error")
+            return redirect(url_for("esqueci_senha"))
+
+        # 2) Gera o token
+        token = gerar_token(email)
+        salvar_token_reset(email, token)    # agora salva pelo db_connector
+
+        link = url_for("resetar_senha", token=token, _external=True)
+
+        # 3) Enviar e-mail via Resend
+        resend.Emails.send(
+            {
+                "from": "Sistema <onboarding@resend.dev>",
+                "to": email,
+                "subject": "Recuperação de senha",
+                "html": f"""
+                    <h2>Recuperação de senha</h2>
+                    <p>Clique no botão abaixo para redefinir sua senha:</p>
+                    <a href="{link}" 
+                       style="background:#111;color:white;padding:10px 15px;
+                              text-decoration:none;border-radius:6px;">
+                        Redefinir Senha
+                    </a>
+                    <p>Se você não solicitou isso, apenas ignore.</p>
+                """
+            }
+        )
+
+        flash("Verifique seu e-mail para continuar.", "success")
+        return redirect(url_for("login"))
+
+    return render_template("esqueci_senha.html")
 
 # ---------- 2FA ----------
 @app.route('/2fa_qr')

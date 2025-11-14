@@ -98,7 +98,7 @@
                 <label for="password">Senha</label>
                 {{ form.password(class="form-control", id="password", placeholder="Digite sua senha") }}
 
-                <a href="#" class="forgot-link">Esqueceu a senha?</a>
+                <a href="{{ url_for('esqueci_senha') }}" class="forgot-link">Esqueceu a senha?</a>
 
                 <button type="submit" class="btn">Entrar</button>
             </form>

@@ -3,7 +3,8 @@ import mysql.connector
 from dotenv import load_dotenv
 
 load_dotenv()
-
+id_conta = os.getenv("CONTA_ID")
+print(id_conta)
 # ---------------- CONEXÃO ----------------
 db = mysql.connector.connect(
     host=os.getenv('DB_HOST', "127.0.0.1"),
@@ -13,7 +14,6 @@ db = mysql.connector.connect(
 )
 
 def ensure_db_connected():
-    """Garante que a conexão com o banco esteja ativa"""
     global db
     try:
         if not db.is_connected():
@@ -25,6 +25,7 @@ def ensure_db_connected():
                 user=os.getenv('DB_USER', "Root"),
                 password=os.getenv('DB_PASSWORD', "root"),
                 database=os.getenv('DB_NAME', "tcc_reconhece")
+
             )
         except Exception as e:
             print("Falha ao reconectar DB:", e)
@@ -43,6 +44,7 @@ def get_usuario_by_email(email):
         return cursor.fetchone()
 
 def insert_usuario(nome, email, senha, tipo, endereco_imagem):
+    global id_conta
     ensure_db_connected()
     with db.cursor() as cursor:
         cursor.execute(
@@ -84,7 +86,7 @@ def list_usuarios(admin=False, user_id=None, filtro=None, data=None):
     ensure_db_connected()
     with db.cursor(dictionary=True) as cursor:
         if admin:
-            query = "SELECT * FROM usuarios WHERE 1=1"
+            query = "SELECT * FROM usuarios"
             valores = []
         else:
             query = "SELECT * FROM usuarios WHERE id = %s"
@@ -102,3 +104,37 @@ def list_usuarios(admin=False, user_id=None, filtro=None, data=None):
         query += " ORDER BY criado_em DESC"
         cursor.execute(query, valores)
         return cursor.fetchall()
+
+# ---------------- SUPORTE AO SISTEMA DE RESET DE SENHA ----------------
+def salvar_token_reset(email, token):
+    ensure_db_connected()
+    with db.cursor() as cursor:
+        cursor.execute("""
+            UPDATE usuarios
+            SET reset_token = %s,
+                reset_expires = DATE_ADD(NOW(), INTERVAL 30 MINUTE)
+            WHERE email = %s
+        """, (token, email))
+        db.commit()
+
+def validar_token(token):
+    ensure_db_connected()
+    with db.cursor(dictionary=True) as cursor:
+        cursor.execute("""
+            SELECT * FROM usuarios
+            WHERE reset_token = %s
+              AND reset_expires > NOW()
+        """, (token,))
+        return cursor.fetchone()
+
+def atualizar_senha(email, nova_senha):
+    ensure_db_connected()
+    with db.cursor() as cursor:
+        cursor.execute("""
+            UPDATE usuarios
+            SET senha = %s,
+                reset_token = NULL,
+                reset_expires = NULL
+            WHERE email = %s
+        """, (nova_senha, email))
+        db.commit()
