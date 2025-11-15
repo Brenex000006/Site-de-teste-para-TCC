@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 import yaml
+import socket
 import base64
 import boto3
 import psutil
@@ -82,7 +83,6 @@ def pegar_config_boto3() -> any:
     """
     Procura configurações que devem ser secretas e não devem ficar no código
 
-    :param tipo_config: string com o tipo de configuração que deve ser procurado
     :return: retorna uma lista ou valor para aquele tipo de configuração
     """
     configs = None
@@ -95,6 +95,27 @@ def pegar_config_boto3() -> any:
         configs.append(config["s3_config"]["bucket"])
         configs.append(config["s3_config"]["folder"])
     return configs
+
+def pegar_config_DB(tipo_db: str) -> dict:
+    """
+        Procura configurações que devem ser secretas e não devem ficar no código
+
+        :return: retorna um dict com a configuração
+        """
+    configs = None
+    if tipo_db == "RDS":
+        search_str = "rds_login"
+    else:
+        search_str = "db_config"
+    with open("Config/config.yaml", "r") as f:
+        config = yaml.safe_load(f)
+        configs = {
+            "host": config[search_str]["host"],
+            "user": config[search_str]["user"],
+            "password": config[search_str]["password"],
+            "database": config[search_str]["database"]}
+    return configs
+
 
 def enviar_backup_s3(file, nome_user):
     lista_configs = pegar_config_boto3()
@@ -140,3 +161,10 @@ def conectado_internet() -> bool:
             if "eth" in name.lower() or "en" in name.lower() or "ethernet" in name.lower():
                 return True
     return False
+
+def internet_ativa():
+    try:
+        socket.create_connection(("8.8.8.8", 53), timeout=2)
+        return True
+    except OSError:
+        return False

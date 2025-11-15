@@ -15,10 +15,11 @@ from werkzeug.security import generate_password_hash
 # imports locais
 from db_connector import (
     get_usuario_by_id, get_usuario_by_email,
-    insert_usuario, update_usuario, delete_usuario, list_usuarios, validar_token, atualizar_senha, salvar_token_reset
+    insert_usuario, update_usuario, delete_usuario, list_usuarios, validar_token, atualizar_senha, salvar_token_reset,
+    pegar_usuarios, att_usuarios
 )
 from forms import LoginForm, UsuarioForm, EditarForm
-from utils import pegar_config, enviar_backup_s3, conectado_internet, caminho_imagem_relativo
+from utils import pegar_config, enviar_backup_s3, conectado_internet, caminho_imagem_relativo, internet_ativa
 from registrar_mudancas import carregar_buffer, debounce_worker
 from two_factor import get_or_create_admin_2fa_secret, generate_2fa_qr
 
@@ -129,7 +130,8 @@ def cadastrar_usuario():
             url_imagem = os.path.abspath(caminho_arquivo)
 
             try:
-                if conectado_internet():
+                # if conectado_internet():
+                if internet_ativa():
                     threading.Thread(target=enviar_backup_s3, args=(caminho_arquivo,)).start()
                 else:
                     print("Sem Conexão, cadastre novamente o usuário mais tarde para ter o backup da foto!")
@@ -188,7 +190,8 @@ def editar(id):
             novo_endereco = os.path.abspath(caminho_arquivo)
 
             try:
-                if conectado_internet():
+                # if conectado_internet():
+                if internet_ativa():
                     threading.Thread(target=enviar_backup_s3, args=(caminho_arquivo,)).start()
                 else:
                     print("Sem Conexão, cadastre novamente o usuário mais tarde para ter o backup da foto!")
@@ -219,7 +222,8 @@ def excluir(id):
 def importar_bd():
     if current_user.tipo != "admin":
         abort(403)
-    # lógica aqui
+    usuarios = pegar_usuarios("RDS")
+    att_usuarios("MYSQL", usuarios)
     return redirect(url_for("lista"))
 
 @app.route("/exportar_bd")
@@ -227,7 +231,8 @@ def importar_bd():
 def exportar_bd():
     if current_user.tipo != "admin":
         abort(403)
-    # lógica aqui
+    usuarios = pegar_usuarios("MYSQL")
+    att_usuarios("RDS", usuarios)
     return redirect(url_for("lista"))
 
 @app.route("/resetar_senha/<token>", methods=["GET", "POST"])
