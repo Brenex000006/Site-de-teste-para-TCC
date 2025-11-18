@@ -120,10 +120,26 @@
             font-size:14px;
         }
 
-        .btn-success { background:#27ae60; color:white; }
-        .btn-primary { background:#2980b9; color:white; height:40px; }
-        .btn-secondary { background:#7f8c8d; color:white; }
-        .btn-admin { background:#8e44ad; color:white; }
+        .btn-success {
+            background:#27ae60;
+            color:white;
+        }
+
+        .btn-primary {
+            background:#2980b9;
+            color:white;
+            height:40px;
+        }
+
+        .btn-secondary {
+            background:#7f8c8d;
+            color:white;
+        }
+
+        .btn-admin {
+            background:#8e44ad;
+            color:white;
+        }
 
         .table-wrapper {
             width: 100%;
@@ -444,7 +460,7 @@
         }
 
         function confirmImport() {
-            openPopup("Ao Realizar essa ação irá SOBRESCREVER todos os dados locais. Deseja continuar?", function() {
+            openPopup("Ao realizar essa ação irá SOBRESCREVER todos os dados locais. Deseja continuar?", function() {
                 window.location.href = "{{ url_for('importar_bd') }}";
             });
         }

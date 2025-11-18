@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 id_conta = os.getenv("CONTA_ID")
-print(id_conta)
 # ---------------- CONEXÃO ----------------
 db = mysql.connector.connect(
     host=os.getenv('DB_HOST', "127.0.0.1"),

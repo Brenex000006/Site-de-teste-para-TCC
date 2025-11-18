@@ -7,7 +7,6 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from flask_wtf import CSRFProtect
 from flask_wtf.csrf import generate_csrf
 from werkzeug.utils import secure_filename
-from itsdangerous import URLSafeTimedSerializer
 from werkzeug.security import generate_password_hash
 from auth_utils import validar_token, gerar_token_reset
 from email_service import enviar_email_reset
