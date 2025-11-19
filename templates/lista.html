@@ -223,6 +223,25 @@
             100% { opacity: 0; display: none; }
         }
 
+        /* Indicador de Status */
+        .status-indicador {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.75);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 3000;
+            backdrop-filter: blur(4px);
+        }
+        body.dark-mode .status-indicador {
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+        }
+
+
         /* POPUP CUSTOMIZADO */
         .popup-overlay {
             position: fixed;
@@ -289,6 +308,7 @@
     </style>
 </head>
 <body>
+
     <div class="browser-bar">
         <div style="display:flex; align-items:center; gap:12px;">
             <div class="browser-dots">
@@ -464,7 +484,15 @@
                 window.location.href = "{{ url_for('importar_bd') }}";
             });
         }
-
     </script>
+
+    <div class="status-indicador">
+            {% if status_online %}
+                🟢 Online
+            {% else %}
+                🔴 Offline
+            {% endif %}
+    </div>
+
 </body>
 </html>

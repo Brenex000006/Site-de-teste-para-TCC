@@ -1,81 +1,58 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Sistema</title>
-    <style>
-        html, body {
-            height:100%;
-            margin:0;
-            padding:0;
-            font-family:"Segoe UI", Roboto, Arial, sans-serif;
-        }
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Login - Sistema</title>
 
-        body {
+    <style>
+
+    /* ESTILOS GERAIS */
+
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding:0;
+        font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    }
+
+    body {
             background: linear-gradient(135deg, #e9f0fb 0%, #f6f8fb 100%);
             display:flex;
             flex-direction:column;
             color:#111;
         }
 
-        .browser-bar {
-            position:fixed;
-            top:0;
-            left:0;
-            right:0;
-            height:56px;
-            display:flex;
-            justify-content:space-between; align-items:center;
-            padding:0 20px;
-            background:rgba(255,255,255,0.95);
-            border-bottom:1px solid rgba(0,0,0,0.06);
-            z-index:1000;
-        }
+    /* BARRA DO SITE */
 
-        .browser-dots {
-            display:flex;
-            gap:8px;
-        }
+    .browser-bar {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        height: 56px;
+        background: rgba(255,255,255,0.95);
+        border-bottom: 1px solid rgba(0,0,0,0.06);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 20px;
+        z-index: 1000;
+    }
 
-        .dot {
-            width:12px;
-            height:12px;
-            border-radius:50%;
-        }
+    .browser-dots { display: flex; gap: 8px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot.red { background: #ff5f56; }
+    .dot.yellow { background: #ffbd2e; }
+    .dot.green { background: #27ca3f; }
 
-        .dot.red {
-            background:#ff5f56;
-        }
+    .mode-toggle {
+        background:#111; color:#fff;
+        border:none; padding:6px 10px;
+        border-radius:6px; cursor:pointer;
+    }
 
-        .dot.yellow {
-            background:#ffbd2e;
-        }
+    /* FORMULÁRIO */
 
-        .dot.green {
-            background:#27ca3f;
-        }
-
-        .browser-controls {
-            display:flex;
-            gap:12px;
-            align-items:center;
-        }
-
-        .mode-toggle {
-            background:#111;
-            color:#fff;
-            border:none;
-            padding:6px 10px;
-            border-radius:6px;
-            cursor:pointer;
-        }
-
-        .logout-btn {
-            display:none;
-        }
-
-        .content {
+    .content {
             flex:1;
             display:flex;
             justify-content:center;
@@ -150,7 +127,112 @@
             text-decoration:underline;
         }
 
-        body.dark-mode {
+    /* POPUP DE CONSENTIMENTO */
+
+    .consent-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.55);
+        backdrop-filter: blur(3px);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 6000;
+    }
+
+    .consent-box {
+        background: white;
+        padding: 32px;
+        width: 480px;
+        border-radius: 16px;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+
+    .consent-desc {
+        margin: 16px auto 26px;
+        font-size: 16px;
+        line-height: 22px;
+        max-width: 380px;
+    }
+
+    .consent-item {
+        display: flex;
+        gap: 12px;
+        margin: 16px 0;
+        text-align: left;
+        font-size: 16px;
+    }
+
+    .consent-item input[type="checkbox"] {
+        width: 22px;
+        height: 22px;
+        cursor: pointer;
+    }
+
+    .consent-btn {
+        width: 100%;
+        margin-top: 12px;
+        padding: 12px;
+        border-radius: 8px;
+        border: none;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        background: #111;
+        color: white;
+    }
+
+    .consent-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* MODAL EULA */
+
+    #modalEULA {
+        position: fixed;
+        top:0; left:0; right:0; bottom:0;
+        background: rgba(0,0,0,0.75);
+        backdrop-filter: blur(3px);
+        display:none;
+        justify-content:center;
+        align-items:center;
+        z-index:10000;
+    }
+
+    .popup-box {
+        width: 520px;
+        padding: 28px;
+        border-radius: 14px;
+        background:white;
+        max-height: 80vh;
+        overflow:hidden;
+    }
+
+    #textoEULA {
+        height: 55vh;
+        overflow-y: auto;
+        padding: 14px;
+        border-radius: 8px;
+        border:1px solid #ccc;
+    }
+
+    #fecharEULA {
+        margin-top: 14px;
+        width:100%;
+        padding: 12px;
+        border-radius: 8px;
+        border:none;
+        background:#007bff;
+        color:white;
+        cursor:pointer;
+        font-weight: 600;
+    }
+
+    /* DARK MODE */
+
+    body.dark-mode {
             background:#000;
             color:#fff;
         }
@@ -194,8 +276,158 @@
         }
 
     </style>
-</head>
+    </head>
 <body>
+
+    <!-- POPUP CONSENTIMENTO -->
+
+    <div id="consentPopup" class="consent-overlay">
+        <div class="consent-box">
+
+            <h2>Consentimento Necessário</h2>
+            <p class="consent-desc">
+                Para utilizar o sistema, você precisa concordar com os termos abaixo:
+            </p>
+
+            <div class="consent-item">
+                <input type="checkbox" id="consent-img">
+                <label for="consent-img">Concordo com o uso das minhas imagens pelo sistema.</label>
+            </div>
+
+            <div class="consent-item">
+                <input type="checkbox" id="consent-eula">
+                <label for="consent-eula">
+                    Li e concordo com a <a id="openEULA" href="#">EULA</a>.
+                </label>
+            </div>
+
+            <button id="acceptBtn" class="consent-btn" disabled>Aceitar e Continuar</button>
+        </div>
+    </div>
+
+    <!-- MODAL EULA -->
+
+    <div id="modalEULA">
+        <div class="popup-box">
+
+            <h2>Termo de Uso (EULA)</h2>
+
+            <div id="textoEULA">
+                <h3>Termo de Licença de Uso do Sistema (EULA)</h3>
+
+            <h3>1. Introdução</h3>
+            <p>
+            Este Termo de Licença de Usuário Final (“EULA”) regula o uso do Sistema de Cadastro Facial,
+            desenvolvido exclusivamente para fins de autenticação e gerenciamento interno.
+            Ao utilizar o sistema, você declara ter lido, compreendido e concordado integralmente
+            com este documento.
+            </p>
+
+            <h3>2. Finalidade do Sistema</h3>
+            <p>
+            O sistema tem como objetivo realizar a identificação de usuários por meio de imagens
+            faciais enviadas e armazenadas de forma segura. As informações são utilizadas apenas
+            para autenticação e controle de acesso.
+            </p>
+
+            <h3>3. Coleta e Uso de Dados</h3>
+            <p>
+            O sistema pode coletar e armazenar:
+            </p>
+            <ul>
+                <li>Imagens faciais enviadas pelo usuário.</li>
+                <li>Nome e E-mail cadastrados.</li>
+                <li>Metadados mínimos necessários ao funcionamento (ex.: data de criação da conta).</li>
+            </ul>
+
+            <p>
+            As informações coletadas serão utilizadas estritamente para fins de identificação,
+            verificação facial e autenticação no sistema.
+            </p>
+
+            <h3>4. Proteção de Dados e LGPD</h3>
+            <p>
+            Em conformidade com a Lei nº 13.709/2018 (LGPD), o usuário declara estar ciente de que:
+            </p>
+            <ul>
+                <li>Os dados fornecidos serão tratados com finalidade legítima e específica.</li>
+                <li>O armazenamento é feito de maneira segura e restrita.</li>
+                <li>
+                    O usuário pode solicitar a remoção ou atualização de seus dados,
+                    desde que não viole obrigações legais ou institucionais.
+                </li>
+            </ul>
+
+            <p>
+            O sistema não compartilha dados com terceiros e não utiliza informações
+            para fins comerciais ou de marketing.
+            </p>
+
+            <h3>5. Consentimento</h3>
+            <p>
+            Ao prosseguir com o uso do sistema, o usuário declara que:
+            </p>
+            <ul>
+                <li>Está ciente da coleta de imagens e dados pessoais.</li>
+                <li>Concorda com o processamento para fins de autenticação facial.</li>
+                <li>Foi informado sobre seus direitos previstos na LGPD.</li>
+            </ul>
+
+            <h3>6. Direitos do Usuário</h3>
+            <p>
+            O usuário poderá solicitar, a qualquer momento:
+            </p>
+            <ul>
+                <li>Acesso aos dados armazenados.</li>
+                <li>Correção de informações.</li>
+                <li>Revogação do consentimento.</li>
+                <li>Exclusão de seus dados, exceto quando obrigatórios por lei.</li>
+            </ul>
+
+            <h3>7. Responsabilidades do Usuário</h3>
+            <p>
+            O usuário se compromete a:
+            </p>
+            <ul>
+                <li>Fornecer apenas informações verdadeiras.</li>
+                <li>Não tentar burlar, manipular ou comprometer o funcionamento do sistema.</li>
+                <li>Não compartilhar sua conta ou credenciais com terceiros.</li>
+            </ul>
+
+            <h3>8. Limitação de Responsabilidade</h3>
+            <p>
+            O desenvolvedor não se responsabiliza por:
+            </p>
+            <ul>
+                <li>Uso inadequado do sistema.</li>
+                <li>Alterações não autorizadas no ambiente do usuário.</li>
+                <li>Falhas resultantes de infraestrutura externa (internet, servidor etc.).</li>
+            </ul>
+
+            <h3>9. Alterações no EULA</h3>
+            <p>
+            Este termo poderá ser atualizado conforme necessidade do projeto ou exigências legais.
+            A nova versão será disponibilizada no próprio sistema.
+            </p>
+
+            <h3>10. Aceite Final</h3>
+            <p>
+            Ao marcar a opção “Li e concordo”, o usuário declara concordância integral com todos os
+            itens deste EULA e autoriza o uso de suas informações conforme descrito.
+            </p>
+
+            <p><strong>FIM DO DOCUMENTO</strong></p>
+
+            <p><strong>Última atualização:</strong> 2025</p>
+
+            </div>
+
+            <button id="fecharEULA">Fechar</button>
+        </div>
+    </div>
+
+    <!-- LOGIN FORM -->
+
     <div class="browser-bar">
         <div style="display:flex; align-items:center; gap:12px;">
             <div class="browser-dots">
@@ -239,28 +471,72 @@
     </main>
 
     <script>
-        (function(){
-            const modeText=document.getElementById("modeText");
-            const themeToggle=document.getElementById("themeToggle");
-            function applyTheme(theme){
-                if(theme==="dark"){
-                    document.body.classList.add("dark-mode");
-                    modeText.textContent="MODO : NOITE";
-                    themeToggle.textContent="☀️";
-                } else {
-                    document.body.classList.remove("dark-mode");
-                    modeText.textContent="MODO : DIA";
-                    themeToggle.textContent="🌙";
-                }
+        /* ===================== TEMA ===================== */
+        (function () {
+            const modeText = document.getElementById("modeText");
+            const toggle = document.getElementById("themeToggle");
+
+            function setTheme(t) {
+                document.body.classList.toggle("dark-mode", t === "dark");
+                modeText.textContent = t === "dark" ? "MODO : NOITE" : "MODO : DIA";
+                toggle.textContent = t === "dark" ? "☀️" : "🌙";
             }
-            const saved=localStorage.getItem("site-theme")||"light";
-            applyTheme(saved);
-            themeToggle.addEventListener("click",()=>{
-                const next=document.body.classList.contains("dark-mode")?"light":"dark";
-                applyTheme(next);
-                localStorage.setItem("site-theme",next);
-            });
+
+            let saved = localStorage.getItem("site-theme") || "light";
+            setTheme(saved);
+
+            toggle.onclick = () => {
+                saved = saved === "dark" ? "light" : "dark";
+                localStorage.setItem("site-theme", saved);
+                setTheme(saved);
+            };
         })();
+
+        /* ================= CONSENTIMENTO ================= */
+
+        const popup = document.getElementById("consentPopup");
+        const chk1 = document.getElementById("consent-img");
+        const chk2 = document.getElementById("consent-eula");
+        const accept = document.getElementById("acceptBtn");
+
+        function updateBtn() {
+            accept.disabled = !(chk1.checked && chk2.checked);
+        }
+
+        chk1.onchange = updateBtn;
+        chk2.onchange = updateBtn;
+
+        accept.onclick = () => {
+            localStorage.setItem("consentAccepted", "yes");
+            popup.style.display = "none";
+        };
+
+        window.onload = () => {
+            if (!localStorage.getItem("consentAccepted"))
+                popup.style.display = "flex";
+        };
+
+        /* ===================== MODAL EULA ===================== */
+
+        const modal = document.getElementById("modalEULA");
+        const openEULA = document.getElementById("openEULA");
+        const fechar = document.getElementById("fecharEULA");
+        const textoEULA = document.getElementById("textoEULA");
+
+        openEULA.onclick = e => {
+            e.preventDefault();
+            modal.style.display = "flex";
+        };
+
+        fechar.onclick = () => modal.style.display = "none";
+
+        textoEULA.onscroll = () => {
+            const bottom = textoEULA.scrollTop + textoEULA.clientHeight >= textoEULA.scrollHeight - 5;
+            if (bottom) {
+                chk2.checked = true;
+                updateBtn();
+            }
+        };
     </script>
-</body>
+    </body>
 </html>

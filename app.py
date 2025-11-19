@@ -18,7 +18,7 @@ from db_connector import (
     insert_usuario, update_usuario, delete_usuario, list_usuarios, atualizar_senha
 )
 from forms import LoginForm, UsuarioForm, EditarForm
-from utils import pegar_config, enviar_backup_s3, conectado_internet, caminho_imagem_relativo
+from utils import pegar_config, enviar_backup_s3, conectado_internet, caminho_imagem_relativo, internet_ativa
 from registrar_mudancas import carregar_buffer, debounce_worker
 from two_factor import get_or_create_admin_2fa_secret, generate_2fa_qr
 
@@ -158,7 +158,8 @@ def lista():
         data=data
     )
     pessoas = imagem_corrigida(pessoas)
-    return render_template('lista.html', pessoas=pessoas, filtro=filtro, data=data)
+    status_online = internet_ativa()
+    return render_template('lista.html', pessoas=pessoas, filtro=filtro, data=data, status_online=status_online)
 
 # ---------- EDITAR ----------
 @app.route('/editar/<int:id>', methods=['GET', 'POST'])
