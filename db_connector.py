@@ -67,7 +67,7 @@ def insert_usuario(nome, email, senha, tipo, endereco_imagem):
             INSERT INTO usuarios (nome, email, senha, tipo, endereco_imagem, conta_id, criado_em)
             VALUES (%s, %s, %s, %s, %s, %s, NOW())
             """,
-            (nome, email, senha, tipo, id_conta, endereco_imagem)
+            (nome, email, senha, tipo, endereco_imagem, id_conta)
         )
         db.commit()
 
