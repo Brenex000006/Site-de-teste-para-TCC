@@ -2,7 +2,7 @@ import os
 import threading
 import uuid
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, redirect, url_for, flash, abort
+from flask import Flask, render_template, request, redirect, url_for, flash, abort, session
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_wtf import CSRFProtect
 from flask_wtf.csrf import generate_csrf
@@ -20,7 +20,7 @@ from db_connector import (
 from forms import LoginForm, UsuarioForm, EditarForm
 from utils import pegar_config, enviar_backup_s3, conectado_internet, caminho_imagem_relativo, internet_ativa
 from registrar_mudancas import carregar_buffer, debounce_worker
-from two_factor import get_or_create_admin_2fa_secret, generate_2fa_qr
+from two_factor import get_or_create_admin_2fa_secret, generate_2fa_qr, require_2fa
 
 # ---------------- CONFIGURAÇÃO ----------------
 load_dotenv()
@@ -85,11 +85,23 @@ def login():
         usuario = get_usuario_by_email(email)
 
         if usuario and usuario.get('senha') == senha:
+            # Guardar ID do usuário até concluir o 2FA
+            session['pending_2fa_user'] = usuario['id']
+
+            # Se for admin → exige 2FA
+            if usuario.get("tipo") == "admin":
+                # Limpa 2FA da sessão a cada login
+                session["2fa_ok"] = False
+                return redirect(url_for("two_factor_setup"))
+
+            # Se não for admin ou já confirmou 2FA, loga normalmente
             user = Usuario(usuario['id'], usuario['nome'], usuario['email'],
                            usuario.get('tipo'), usuario.get('endereco_imagem'))
+
             login_user(user)
             flash("Login realizado com sucesso!", "success")
-            return redirect(url_for('lista'))
+            return redirect(url_for("lista"))
+
         else:
             flash("E-mail ou senha inválidos.", "login_danger")
 
@@ -104,6 +116,7 @@ def logout():
 
 # ---------- CADASTRAR USUÁRIO ----------
 @app.route("/cadastrar_usuario", methods=["GET", "POST"])
+@require_2fa
 @login_required
 def cadastrar_usuario():
     if current_user.tipo != "admin":
@@ -146,6 +159,7 @@ def cadastrar_usuario():
 
 # ---------- LISTAR ----------
 @app.route('/lista')
+@require_2fa
 @login_required
 def lista():
     filtro = request.args.get('filtro', '').strip()
@@ -163,6 +177,7 @@ def lista():
 
 # ---------- EDITAR ----------
 @app.route('/editar/<int:id>', methods=['GET', 'POST'])
+@require_2fa
 @login_required
 def editar(id):
     pessoa = get_usuario_by_id(id)
@@ -206,6 +221,7 @@ def editar(id):
 
 # ---------- EXCLUIR ----------
 @app.route('/excluir/<int:id>', methods=['POST'])
+@require_2fa
 @login_required
 def excluir(id):
     if current_user.tipo != "admin":
@@ -218,6 +234,7 @@ def excluir(id):
     return redirect(url_for('lista'))
 
 @app.route("/importar_bd")
+@require_2fa
 @login_required
 def importar_bd():
     if current_user.tipo != "admin":
@@ -226,6 +243,7 @@ def importar_bd():
     return redirect(url_for("lista"))
 
 @app.route("/exportar_bd")
+@require_2fa
 @login_required
 def exportar_bd():
     if current_user.tipo != "admin":
@@ -282,30 +300,56 @@ def esqueci_senha():
     return render_template("esqueci_senha.html")
 
 # ---------- 2FA ----------
-@app.route('/2fa_qr')
-def two_factor_qr():
-    return generate_2fa_qr()
+@app.route("/2fa_qr_admin")
+def two_factor_qr_admin():
+    user_id = session.get("pending_2fa_user")
+    if not user_id:
+        return redirect(url_for("login"))
+
+    usuario = get_usuario_by_id(user_id)
+    if not usuario:
+        return redirect(url_for("login"))
+
+    secret = get_or_create_admin_2fa_secret(usuario)
+    return generate_2fa_qr(secret, usuario["email"])
 
 @app.route('/2fa_setup', methods=['GET', 'POST'])
-@login_required
 def two_factor_setup():
     import pyotp
-    secret = get_or_create_admin_2fa_secret()
-    if request.method == 'POST':
-        codigo = request.form.get('codigo_2fa', '')
-        totp = pyotp.TOTP(secret)
-        if totp.verify(codigo, valid_window=1):
-            flash("2FA configurado com sucesso! Faça login novamente.", "info")
-            logout_user()
-            return redirect(url_for('login'))
-        else:
-            flash("Código 2FA inválido. Tente novamente.", "danger")
 
-    provisioning_url = pyotp.TOTP(secret).provisioning_uri(
-        name="admin",
-        issuer_name="Sistema de Cadastro Facial"
-    )
-    return render_template('2fa_setup.html', provisioning_url=provisioning_url)
+    user_id = session.get("pending_2fa_user")
+    if not user_id:
+        return redirect(url_for("login"))
+
+    usuario = get_usuario_by_id(user_id)
+    if not usuario:
+        return redirect(url_for("login"))
+
+    # GERA O SEGREDO ÚNICO PARA ESTE ADMIN
+    secret = get_or_create_admin_2fa_secret(usuario)
+
+    if request.method == "POST":
+        codigo = request.form.get("codigo_2fa")
+        totp = pyotp.TOTP(secret)
+
+        if totp.verify(codigo, valid_window=1):
+            # libera 2FA
+            session["2fa_ok"] = True
+
+            # logar o usuário agora
+            user = Usuario(usuario['id'], usuario['nome'], usuario['email'],
+                           usuario.get('tipo'), usuario.get('endereco_imagem'))
+            login_user(user)
+
+            flash("2FA confirmado com sucesso!", "success")
+            return redirect(url_for("lista"))
+        else:
+            flash("Código inválido. Tente novamente.", "danger")
+
+    # QR CODE
+    qr_url = url_for("two_factor_qr_admin", _external=True)
+
+    return render_template("2fa_setup.html", secret=secret, qr_url=qr_url)
 
 # ---------- MAIN ----------
 if __name__ == '__main__':
