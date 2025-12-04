@@ -3,257 +3,236 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configurar 2FA - Sistema de Moradores</title>
+    <title>Configurar 2FA</title>
+
     <style>
         html, body {
             height: 100%;
             margin: 0;
-            padding: 0;
+            padding:0;
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
         }
 
         body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            display: flex;
-            flex-direction: column;
+            background: linear-gradient(135deg, #e9f0fb 0%, #f6f8fb 100%);
+            display:flex;
+            flex-direction:column;
+            color:#111;
         }
 
-        .browser-frame {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            background: white;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-        }
-
+        /* Barra superior */
         .browser-bar {
-            background: #f0f0f0;
-            padding: 15px 20px;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 56px;
+            background: rgba(255,255,255,0.95);
+            border-bottom: 1px solid rgba(0,0,0,0.06);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #ddd;
+            padding: 0 20px;
+            z-index: 1000;
         }
 
-        .browser-dots {
-            display: flex;
-            gap: 8px;
-        }
-
-        .dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-
+        .browser-dots { display: flex; gap: 8px; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
         .dot.red { background: #ff5f56; }
         .dot.yellow { background: #ffbd2e; }
         .dot.green { background: #27ca3f; }
 
-        .browser-controls {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            font-size: 12px;
-            color: #666;
-        }
-
-        .mode-toggle {
-            background: #333;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 11px;
-        }
+        /* Conteúdo */
 
         .content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
+            flex:1;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            padding:80px 20px 40px;
         }
 
-        .login-container {
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
+        .form-container {
+            width:100%;
+            max-width:420px;
+            background:white;
+            padding:28px;
+            border-radius:12px;
+            box-shadow:0 2px 8px rgba(0,0,0,0.08);
+            text-align:center;
         }
 
         h1 {
-            font-size: 2.2rem;
-            color: #333;
-            margin-bottom: 10px;
-            font-weight: 300;
+            margin-bottom:8px;
+            font-size:28px;
+            font-weight:600;
         }
 
         .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 0.9rem;
+            margin-bottom:20px;
+            color:#666;
+            font-size:14px;
         }
 
-        .qr-container {
-            margin-bottom: 30px;
+        .qr-box {
+            margin: 20px 0;
         }
 
-        .qr-container img {
-            width: 200px;
-            height: 200px;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        .qr-box img {
+            width: 180px;      /* tamanho desejado */
+            height: 180px;     /* mantém quadrado */
+            object-fit: contain;
+            image-rendering: pixelated; /* deixa o QR mais nítido */
         }
 
-        .form-group {
-            margin-bottom: 25px;
-            text-align: left;
+
+        input {
+            width:95%;
+            padding:12px;
+            border-radius:6px;
+            margin-top: 2px;
+            border:1px solid rgba(0,0,0,0.12);
+            margin-bottom:18px;
+            font-size:14px;
         }
 
-        label {
-            display: block;
-            color: #555;
-            margin-bottom: 8px;
-            font-weight: 500;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            letter-spacing: 0.5px;
+        .btn {
+            width:100%;
+            padding:12px;
+            background:#111;
+            color:#fff;
+            border:none;
+            border-radius:6px;
+            font-weight:600;
+            cursor:pointer;
         }
 
-        input[type="text"] {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            background: #f8f9fa;
+        .btn:hover {
+            background:#333;
         }
 
-        input[type="text"]:focus {
-            outline: none;
-            border-color: #007bff;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        .flash {
+            background: #ffdddd;
+            border: 1px solid #ff5f56;
+            color: #a30000;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
         }
 
-        .login-btn {
-            width: 100%;
-            background: #333;
-            color: white;
-            border: none;
-            padding: 15px;
-            font-size: 1rem;
-            font-weight: 600;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 20px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+        /* Dark Mode */
 
-        .login-btn:hover {
-            background: #555;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-
-        .login-btn:active {
-            transform: translateY(0);
-        }
-
-        /* Dark mode */
         body.dark-mode {
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            background:#000;
+            color:#fff;
         }
 
-        .dark-mode .browser-frame {
-            background: #1a1a1a;
-            color: white;
+        body.dark-mode .browser-bar {
+            background:rgba(16,16,16,0.95);
         }
 
-        .dark-mode h1 { color: white; }
-        .dark-mode .subtitle { color: #ccc; }
-        .dark-mode label { color: #ddd; }
-        .dark-mode input[type="text"] {
-            background: #2a2a2a;
-            border-color: #444;
-            color: white;
+        body.dark-mode .form-container {
+            background:#111; color:#ddd;
         }
 
-        .dark-mode input[type="text"]:focus {
-            border-color: #007bff;
-            background: #333;
+        body.dark-mode input {
+            background:#1a1a1a;
+            color:#ddd;
+            border:1px solid rgba(255,255,255,0.08);
         }
 
-        .dark-mode .qr-container img {
-            box-shadow: 0 4px 15px rgba(255,255,255,0.1);
+        body.dark-mode .btn {
+            background:#363636;
+            color:#fff;
         }
 
-        @media (max-width: 768px) {
-            .content {
-                padding: 20px;
-            }
-            h1 {
-                font-size: 1.8rem;
-            }
-            .qr-container img {
-                width: 150px;
-                height: 150px;
-            }
+        body.dark-mode .btn:hover {
+            background:#575757;
+            color:#fff;
+        }
+
+        .mode-toggle {
+            background:#111; color:#fff;
+            border:none;
+            padding:6px 10px;
+            border-radius:6px;
+            cursor:pointer;
+        }
+
+        body.dark-mode .mode-toggle {
+            background:#363636;
         }
     </style>
 </head>
 <body>
-    <div class="browser-frame">
-        <div class="browser-bar">
+
+    <div class="browser-bar">
+        <div style="display:flex; align-items:center; gap:12px;">
             <div class="browser-dots">
                 <div class="dot red"></div>
                 <div class="dot yellow"></div>
                 <div class="dot green"></div>
             </div>
-            <div class="browser-controls">
-                <span>MODO - DIA</span>
-                <button class="mode-toggle" onclick="toggleTheme()">🌙</button>
-            </div>
+            <strong>Cadastro Facial</strong>
         </div>
-
-        <div class="content">
-            <div class="login-container">
-                <h1>Configurar 2FA</h1>
-                <p class="subtitle">Escaneie o QR Code e insira o código abaixo</p>
-
-                <div class="qr-container">
-                    <img src="{{ url_for('two_factor_qr') }}" alt="QR Code para 2FA">
-                </div>
-
-                <form method="POST">
-                    <div class="form-group">
-                        <label for="codigo_2fa">Código 2FA</label>
-                        <input type="text" id="codigo_2fa" name="codigo_2fa" required>
-                    </div>
-                    <button type="submit" class="login-btn">Ativar 2FA</button>
-                </form>
-            </div>
+        <div class="browser-controls">
+            <span id="modeText">MODO : DIA</span>
+            <button id="themeToggle" class="mode-toggle">🌙</button>
         </div>
     </div>
 
+    <main class="content">
+        <div class="form-container">
+            <h1>Ativar 2FA</h1>
+            <p class="subtitle">Escaneie o QR Code no Google Authenticator</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="qr-box">
+                <img src="{{ url_for('two_factor_qr_admin') }}" alt="QR Code 2FA">
+            </div>
+
+            <form method="POST">
+
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <label for="code" style="text-align:left;font-size:14px;font-weight:500; margin-bottom: 4px;">
+                    Código do Authenticator
+                </label>
+
+                <input type="text" id="code" name="codigo_2fa" placeholder="Digite o código de 6 dígitos">
+
+                <button type="submit" class="btn">Ativar 2FA</button>
+            </form>
+
+        </div>
+    </main>
+
     <script>
-        function toggleTheme() {
-            document.body.classList.toggle('dark-mode');
-            const modeText = document.querySelector('.browser-controls span');
-            const modeButton = document.querySelector('.mode-toggle');
-            if (document.body.classList.contains('dark-mode')) {
-                modeText.textContent = 'MODO - NOITE';
-                modeButton.textContent = '☀️';
-            } else {
-                modeText.textContent = 'MODO - DIA';
-                modeButton.textContent = '🌙';
+        /* ===================== TEMA ===================== */
+        (function () {
+            const modeText = document.getElementById("modeText");
+            const toggle = document.getElementById("themeToggle");
+
+            function setTheme(t) {
+                document.body.classList.toggle("dark-mode", t === "dark");
+                modeText.textContent = t === "dark" ? "MODO : NOITE" : "MODO : DIA";
+                toggle.textContent = t === "dark" ? "☀️" : "🌙";
             }
-        }
+
+            let saved = localStorage.getItem("site-theme") || "light";
+            setTheme(saved);
+
+            toggle.onclick = () => {
+                saved = saved === "dark" ? "light" : "dark";
+                localStorage.setItem("site-theme", saved);
+                setTheme(saved);
+            };
+        })();
     </script>
 </body>
 </html>

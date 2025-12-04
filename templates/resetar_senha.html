@@ -6,11 +6,13 @@
     <title>Redefinir Senha - Sistema</title>
     <style>
         html, body { height:100%; margin:0; padding:0; font-family:"Segoe UI", Roboto, Arial, sans-serif; }
+
         body {
             background: linear-gradient(135deg, #e9f0fb 0%, #f6f8fb 100%);
             display:flex; flex-direction:column; color:#111;
         }
 
+        /* Barra superior */
         .browser-bar {
             position:fixed; top:0; left:0; right:0;
             height:56px; display:flex; justify-content:space-between; align-items:center;
@@ -26,33 +28,26 @@
         .browser-controls { display:flex; gap:12px; align-items:center; }
         .mode-toggle { background:#111; color:#fff; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; }
 
+        /* Conteúdo */
         .content {
             flex:1; display:flex; justify-content:center; align-items:center;
             padding:80px 20px 40px;
         }
-
         .form-container {
             width:100%; max-width:400px; background:white; padding:28px;
             border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); text-align:center;
         }
 
-        h1 { margin-bottom:8px; font-size:28px; font-weight:600; }
-        .subtitle { margin-bottom:28px; color:#666; font-size:14px; }
-
         label { display:block; text-align:left; font-size:14px; margin-bottom:6px; font-weight:500; }
         input {
-            width:100%; padding:12px; border-radius:6px; border:1px solid rgba(0,0,0,0.12);
+            width:94%; padding:12px; border-radius:6px; border:1px solid rgba(0,0,0,0.12);
             margin-bottom:18px; font-size:14px;
         }
-
         .btn {
             width:100%; padding:12px; background:#111; color:#fff;
             border:none; border-radius:6px; font-weight:600; cursor:pointer;
         }
-
-        .btn:hover {
-            background:#333;
-        }
+        .btn:hover { background:#333; }
 
         .btn-secondary {
             width:100%; padding:12px; background:#777; color:#fff;
@@ -60,38 +55,97 @@
             margin-top:12px;
         }
 
-        /* Dark mode */
-        body.dark-mode {
-            background:#000; color:#fff;
+        /* POPUP CUSTOMIZADO */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(3px);
+            display: none;                /* start hidden */
+            justify-content: center;
+            align-items: center;
+            z-index: 5000;
         }
 
-        body.dark-mode .browser-bar {
-            background:rgba(16,16,16,0.95);
+        .popup-overlay.show {
+            display: flex;
         }
 
-        body.dark-mode .form-container {
-            background:#111; color:#ddd;
+        .popup-box {
+            background: #ffffff;
+            padding: 20px 26px;
+            border-radius: 12px;
+            width: 340px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            font-size: 16px;
+            animation: popupFadeIn .18s ease-out;
+            color: #111;
         }
 
-        body.dark-mode input {
-            background:#1a1a1a; color:#ddd; border:1px solid rgba(255,255,255,0.08);
+        /* Dark mode popup */
+        body.dark-mode .popup-box {
+            background: #111;
+            color: #ddd;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.6);
         }
 
-        body.dark-mode .btn-secondary {
-            background:#333;
+        .popup-buttons {
+            margin-top: 18px;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
         }
 
+        .popup-buttons button {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* confirm = verde do site, cancel = cinza */
+        #popupConfirm {
+            background: #0dd93d;
+            color: white;
+        }
+        body.dark-mode #popupConfirm {
+            background: #09b93a; /* slightly darker green in dark mode */
+        }
+
+        #popupCancel {
+            background: #7f8c8d;
+            color: white;
+        }
+        body.dark-mode #popupCancel {
+            background: #5f6b6d;
+        }
+
+        /* pequenas animações */
+        @keyframes popupFadeIn {
+            from { transform: translateY(6px); opacity: 0; }
+            to   { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Dark Mode */
+        body.dark-mode { background:#000; color:#fff; }
+        body.dark-mode .browser-bar { background:rgba(16,16,16,0.95); }
+        body.dark-mode .form-container { background:#111; color:#ddd; }
+        body.dark-mode input { background:#1a1a1a; color:#ddd; border:1px solid rgba(255,255,255,0.08); }
+        body.dark-mode .btn { background:#fff; color:#111; }
+        body.dark-mode .btn:hover { background:#ddd; }
         body.dark-mode .btn-secondary:hover {
             background:#575757;
             color:#fff;
         }
-
-        body.dark-mode .btn {
-            background:#fff; color:#111;
-        }
-
-        body.dark-mode .btn:hover {
-            background:#ddd;
+        body.dark-mode .btn-secondary { background:#333; }
+        body.dark-mode .mode-toggle {
+            background:#363636;
+            color:#fff;
         }
 
     </style>
@@ -113,13 +167,29 @@
         </div>
     </div>
 
+    <!-- POPUP DE SUCESSO PADRÃO DO SISTEMA -->
+    <div id="popup" class="popup-overlay" role="dialog" aria-modal="true" aria-labelledby="popupTitle">
+      <div class="popup-box" id="popupBox">
+        <h2 id="popupTitle">Senha redefinida!</h2>
+        <p>A senha foi atualizada com sucesso. Deseja voltar para a tela de login?</p>
+
+        <div class="popup-buttons">
+          <button id="popupConfirm" onclick="window.location.href='{{ url_for('login') }}'">Voltar ao Login</button>
+          <button id="popupCancel" onclick="closePopup()">Continuar aqui</button>
+        </div>
+      </div>
+    </div>
+
+
+
     <main class="content">
         <div class="form-container">
-
             <h1>Redefinir Senha</h1>
-            <p class="subtitle">Digite sua nova senha abaixo</p>
+            <p style="color:#555; font-size:13px;">Redefinindo a senha para: {{ email }}</p>
 
             <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
                 <label for="senha">Nova Senha</label>
                 <input type="password" id="senha" name="senha" required>
 
@@ -129,37 +199,51 @@
             <button onclick="window.location.href='{{ url_for('login') }}'" class="btn-secondary">
                 Voltar ao Login
             </button>
-
         </div>
     </main>
 
     <script>
-        (function(){
-            const modeText = document.getElementById("modeText");
-            const themeToggle = document.getElementById("themeToggle");
+    (function(){
+        const modeText = document.getElementById("modeText");
+        const themeToggle = document.getElementById("themeToggle");
 
-            function applyTheme(theme){
-                if(theme === "dark"){
-                    document.body.classList.add("dark-mode");
-                    modeText.textContent = "MODO : NOITE";
-                    themeToggle.textContent = "☀️";
-                } else {
-                    document.body.classList.remove("dark-mode");
-                    modeText.textContent = "MODO : DIA";
-                    themeToggle.textContent = "🌙";
-                }
+        function applyTheme(theme){
+            if(theme === "dark"){
+                document.body.classList.add("dark-mode");
+                modeText.textContent = "MODO : NOITE";
+                themeToggle.textContent = "☀️";
+            } else {
+                document.body.classList.remove("dark-mode");
+                modeText.textContent = "MODO : DIA";
+                themeToggle.textContent = "🌙";
             }
+        }
 
-            const savedTheme = localStorage.getItem("site-theme") || "light";
-            applyTheme(savedTheme);
+        const savedTheme = localStorage.getItem("site-theme") || "dark"; // dark padrão
+        applyTheme(savedTheme);
 
-            themeToggle.addEventListener("click", ()=> {
-                const next = document.body.classList.contains("dark-mode") ? "light" : "dark";
-                applyTheme(next);
-                localStorage.setItem("site-theme", next);
-            });
-        })();
-    </script>
+        themeToggle.addEventListener("click", ()=> {
+            const next = document.body.classList.contains("dark-mode") ? "light" : "dark";
+            applyTheme(next);
+            localStorage.setItem("site-theme", next);
+        });
+
+        // ---------- popup handling ----------
+        function showPopup() {
+            document.getElementById("popup").classList.add("show");
+        }
+        window.closePopup = function() {
+            document.getElementById("popup").classList.remove("show");
+        }
+
+        // Se o backend enviou popup=True
+            {% if popup %}
+                document.getElementById("popup").style.display = "flex";
+            {% endif %}
+
+    })();
+</script>
+
 
 </body>
 </html>

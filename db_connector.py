@@ -1,6 +1,4 @@
 import os
-from pprint import pprint
-
 import mysql.connector
 from dotenv import load_dotenv
 from utils import pegar_config_DB, conectado_internet, internet_ativa
@@ -10,7 +8,6 @@ load_dotenv()
 id_conta = os.getenv("CONTA_ID")
 rds_config = pegar_config_DB("RDS")
 mysql_config = pegar_config_DB("MYSQL")
-
 # ---------------- CONEXÃO ----------------
 # if conectado_internet():
 if internet_ativa():
@@ -121,35 +118,13 @@ def list_usuarios(admin=False, user_id=None, filtro=None, data=None):
         return cursor.fetchall()
 
 # ---------------- SUPORTE AO SISTEMA DE RESET DE SENHA ----------------
-def salvar_token_reset(email, token):
-    ensure_db_connected()
-    with db.cursor() as cursor:
-        cursor.execute("""
-            UPDATE usuarios
-            SET reset_token = %s,
-                reset_expires = DATE_ADD(NOW(), INTERVAL 30 MINUTE)
-            WHERE email = %s
-        """, (token, email))
-        db.commit()
-
-def validar_token(token):
-    ensure_db_connected()
-    with db.cursor(dictionary=True) as cursor:
-        cursor.execute("""
-            SELECT * FROM usuarios
-            WHERE reset_token = %s
-              AND reset_expires > NOW()
-        """, (token,))
-        return cursor.fetchone()
 
 def atualizar_senha(email, nova_senha):
     ensure_db_connected()
     with db.cursor() as cursor:
         cursor.execute("""
             UPDATE usuarios
-            SET senha = %s,
-                reset_token = NULL,
-                reset_expires = NULL
+            SET senha = %s
             WHERE email = %s
         """, (nova_senha, email))
         db.commit()
