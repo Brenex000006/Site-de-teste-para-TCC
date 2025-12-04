@@ -24,7 +24,7 @@ def pegar_config(tipo_config: str) -> any:
     if tipo_config == "LBD":
         with open(path, "r") as f:
             config = yaml.safe_load(f)
-            configs = config["lambda"]["LAMBDA_URL"]
+            configs = config["lambda"]["SINCRONIZA_ARQS_URL"]
     return configs
 
 def caminho_imagem_relativo(img_path):
@@ -113,43 +113,86 @@ def pegar_config_DB(tipo_db: str) -> dict:
             "host": config[search_str]["host"],
             "user": config[search_str]["user"],
             "password": config[search_str]["password"],
-            "database": config[search_str]["database"]}
+            "database": config[search_str]["database"],
+            "conta_id": config[search_str]["conta_id"]
+        }
+
     return configs
 
 
-def enviar_backup_s3(file, nome_user):
+def enviar_backup_s3(file, nome_user, nome_conta):
     lista_configs = pegar_config_boto3()
-    insert_into_s3(lista_configs, file, nome_user)
+    insert_into_s3(lista_configs, file, nome_user, nome_conta)
     print("Inserido no S3")
 
-def insert_into_s3(lista_configs, file, nome_user):
-    file = os.path.join("static", file)
+def insert_into_s3(lista_configs, file, nome_user, nome_conta):
     global boto3_session
+
     region = lista_configs[2]
+    access_key = lista_configs[0]
+    secret_access_key = lista_configs[1]
+    bucket = lista_configs[3]
+
     if boto3_session is None:
-        access_key = lista_configs[0]
-        secret_access_key = lista_configs[1]
         boto3_session = boto3.session.Session(
             aws_access_key_id=access_key,
             aws_secret_access_key=secret_access_key,
             region_name=region
         )
-        s3 = boto3_session.client("s3", region_name=region)
-    else:
-        s3 = boto3_session.client("s3", region_name=region)
-    bucket = lista_configs[3]
-    folder = lista_configs[4]
 
+    s3 = boto3_session.client("s3", region_name=region)
     normalized_file = Path(file).expanduser().resolve()
+    nome_arquivo = os.path.basename(normalized_file)
+    nome_final_s3 = nome_arquivo.rsplit("/", 1)[-1]
+
+    caminho_s3 = f"{nome_conta}/backup_imagens/{nome_final_s3}"
+
+    content_type = "application/json"
 
     with open(normalized_file, "rb") as f:
         s3.put_object(
             Bucket=bucket,
-            Key=f"{folder}backup_imagens/{nome_user}.jpg",
+            Key=caminho_s3,
             Body=f,
-            ContentType="image/jpeg"
+            ContentType=content_type
         )
-        print("Inserido no S3")
+
+    print(f"Inserido no S3 em: {caminho_s3}")
+
+def deletar_imagem_s3(caminho_imagem, nome_conta):
+    global boto3_session
+
+    lista_configs = pegar_config_boto3()
+
+    region = lista_configs[2]
+    access_key = lista_configs[0]
+    secret_access_key = lista_configs[1]
+    bucket = lista_configs[3]
+
+    if boto3_session is None:
+        boto3_session = boto3.session.Session(
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_access_key,
+            region_name=region
+        )
+
+    s3 = boto3_session.client("s3", region_name=region)
+
+    nome_arquivo = os.path.basename(caminho_imagem)
+
+    caminho_s3 = f"{nome_conta}/backup_imagens/{nome_arquivo}"
+
+    try:
+        s3.delete_object(
+            Bucket=bucket,
+            Key=caminho_s3
+        )
+        print(f"[S3] Imagem deletada com sucesso: {caminho_s3}")
+        return True
+
+    except Exception as e:
+        print("[S3] ERRO ao deletar imagem:", e)
+        return False
 
 def conectado_internet() -> bool:
     """

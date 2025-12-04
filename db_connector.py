@@ -1,11 +1,10 @@
 import os
 import mysql.connector
 from dotenv import load_dotenv
-from utils import pegar_config_DB, conectado_internet, internet_ativa
+from utils import pegar_config_DB, conectado_internet, internet_ativa, deletar_imagem_s3
 
 # ---------------- CONFIG AMBIENTE ----------------
 load_dotenv()
-id_conta = os.getenv("CONTA_ID")
 rds_config = pegar_config_DB("RDS")
 mysql_config = pegar_config_DB("MYSQL")
 # ---------------- CONEXÃO ----------------
@@ -20,6 +19,7 @@ db = mysql.connector.connect(
     password=config_escolhida["password"],
     database=config_escolhida["database"],
 )
+id_conta = config_escolhida["conta_id"]
 
 def ensure_db_connected():
     global db
@@ -83,16 +83,38 @@ def update_usuario(id, nome, email, endereco_imagem):
 
 def delete_usuario(id):
     ensure_db_connected()
+
     with db.cursor(dictionary=True) as cursor:
         cursor.execute("SELECT * FROM usuarios WHERE id = %s", (id,))
         usuario = cursor.fetchone()
+
         if usuario:
             imagem_url = usuario.get('endereco_imagem', '')
-            if imagem_url and os.path.exists(imagem_url):
-                os.remove(imagem_url)
+            nome_conta = pegar_conta_por_id()
+
+            try:
+                if imagem_url and internet_ativa():
+                    deletar_imagem_s3(imagem_url, nome_conta)
+            except Exception as e:
+                print("Erro ao deletar do S3:", e)
+
+            try:
+                if imagem_url:
+                    caminho_local = imagem_url
+                    if imagem_url.startswith("/"):
+                        caminho_local = imagem_url[1:]  # remove a /
+
+                    if os.path.exists(caminho_local):
+                        os.remove(caminho_local)
+            except Exception as e:
+                print("Erro ao deletar imagem local:", e)
+
             cursor.execute("DELETE FROM usuarios WHERE id = %s", (id,))
             db.commit()
+
         return usuario
+
+
 
 def list_usuarios(admin=False, user_id=None, filtro=None, data=None):
     ensure_db_connected()
@@ -116,6 +138,26 @@ def list_usuarios(admin=False, user_id=None, filtro=None, data=None):
         query += " ORDER BY criado_em DESC"
         cursor.execute(query, valores)
         return cursor.fetchall()
+
+def pegar_conta_por_id() -> str:
+    conn = mysql.connector.connect(
+        host=config_escolhida["host"],
+        user=config_escolhida["user"],
+        password=config_escolhida["password"],
+        database=config_escolhida["database"]
+    )
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT nome FROM contas WHERE id = %s",
+        (config_escolhida["conta_id"],)
+    )
+
+    resultado = cursor.fetchone()
+    conn.close()
+
+    if resultado:
+        return resultado[0]  # nome
+    return ""
 
 # ---------------- SUPORTE AO SISTEMA DE RESET DE SENHA ----------------
 

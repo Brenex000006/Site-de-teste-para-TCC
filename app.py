@@ -15,8 +15,8 @@ import resend
 # imports locais
 from db_connector import (
     get_usuario_by_id, get_usuario_by_email,
-    insert_usuario, update_usuario, delete_usuario, list_usuarios, validar_token, atualizar_senha, salvar_token_reset,
-    pegar_usuarios, att_usuarios
+    insert_usuario, update_usuario, delete_usuario, list_usuarios, atualizar_senha,
+    pegar_usuarios, att_usuarios, pegar_conta_por_id
 )
 from forms import LoginForm, UsuarioForm, EditarForm
 from utils import pegar_config, enviar_backup_s3, conectado_internet, caminho_imagem_relativo, internet_ativa
@@ -98,7 +98,6 @@ def login():
             # Se não for admin ou já confirmou 2FA, loga normalmente
             user = Usuario(usuario['id'], usuario['nome'], usuario['email'],
                            usuario.get('tipo'), usuario.get('endereco_imagem'))
-
             login_user(user)
             flash("Login realizado com sucesso!", "success")
             return redirect(url_for("lista"))
@@ -146,9 +145,16 @@ def cadastrar_usuario():
 
             try:
                 if internet_ativa():
-                    threading.Thread(target=enviar_backup_s3, args=(caminho_arquivo,)).start()
+                    nome_conta = pegar_conta_por_id()
+                    nome_user = nome
+                    threading.Thread(
+                        target=enviar_backup_s3,
+                        args=(caminho_arquivo, nome_user, nome_conta)
+                    ).start()
+
                 else:
                     print("Sem Conexão, cadastre novamente o usuário mais tarde para ter o backup da foto!")
+
             except ImportError:
                 print("[AVISO] enviar_backup_s3 não encontrado em utils.py. Upload local apenas.")
 
@@ -197,6 +203,7 @@ def editar(id):
         nome = form.nome.data.strip()
         email = form.email.data.strip().lower()
         uploaded = form.endereco_imagem.data
+        print(pessoa.get('endereco_imagem'))
 
         novo_endereco = pessoa.get('endereco_imagem')
         if uploaded and getattr(uploaded, 'filename', None):
