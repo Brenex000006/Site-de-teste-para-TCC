@@ -1,6 +1,8 @@
 import os
 import threading
 import uuid
+
+import pyotp
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash, abort, session
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
@@ -80,24 +82,54 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
+
+    if request.method == "POST" and request.form.get("codigo_2fa"):
+        user_id = session.get("pending_2fa_user")
+        if not user_id:
+            flash("Sessão expirada. Faça login novamente.", "danger")
+            return redirect(url_for("login"))
+
+        usuario = get_usuario_by_id(user_id)
+        secret = get_or_create_admin_2fa_secret(usuario)
+
+        totp = pyotp.TOTP(secret)
+        codigo = request.form.get("codigo_2fa")
+
+        if totp.verify(codigo, valid_window=1):
+            session["2fa_ok"] = True
+
+            user = Usuario(
+                usuario['id'], usuario['nome'], usuario['email'],
+                usuario.get('tipo'), usuario.get('endereco_imagem')
+            )
+            login_user(user)
+
+            flash("Login realizado com sucesso!", "success")
+            return redirect(url_for("lista"))
+        else:
+            flash("Código 2FA inválido.", "danger")
+            return render_template("login.html", form=form, mostrar_popup_2fa=True)
+
     if form.validate_on_submit():
         email = form.email.data
         senha = form.password.data
         usuario = get_usuario_by_email(email)
 
         if usuario and usuario.get('senha') == senha:
-            # Guardar ID do usuário até concluir o 2FA
             session['pending_2fa_user'] = usuario['id']
 
-            # Se for admin → exige 2FA
             if usuario.get("tipo") == "admin":
-                # Limpa 2FA da sessão a cada login
                 session["2fa_ok"] = False
-                return redirect(url_for("two_factor_setup"))
 
-            # Se não for admin ou já confirmou 2FA, loga normalmente
-            user = Usuario(usuario['id'], usuario['nome'], usuario['email'],
-                           usuario.get('tipo'), usuario.get('endereco_imagem'))
+                if not session.get("admin_ja_passou_2fa"):
+                    return redirect(url_for("two_factor_setup"))
+
+                return render_template("login.html", form=form, mostrar_popup_2fa=True)
+
+            user = Usuario(
+                usuario['id'], usuario['nome'], usuario['email'],
+                usuario.get('tipo'), usuario.get('endereco_imagem')
+            )
             login_user(user)
             flash("Login realizado com sucesso!", "success")
             return redirect(url_for("lista"))
@@ -105,7 +137,8 @@ def login():
         else:
             flash("E-mail ou senha inválidos.", "login_danger")
 
-    return render_template('login.html', form=form)
+    return render_template("login.html", form=form)
+
 
 @app.route('/logout')
 @login_required
@@ -345,6 +378,7 @@ def two_factor_setup():
         if totp.verify(codigo, valid_window=1):
             # libera 2FA
             session["2fa_ok"] = True
+            session["admin_ja_passou_2fa"] = True
 
             # logar o usuário agora
             user = Usuario(usuario['id'], usuario['nome'], usuario['email'],
